@@ -15,6 +15,7 @@ const modalCancel = document.getElementById("modal-cancel");
 const modalConfirm = document.getElementById("modal-confirm");
 const adminSearch = document.getElementById("admin-search");
 const envBadge = document.getElementById("env-badge");
+const API_BASE = String(window.ADMIN_API_BASE || "").replace(/\/+$/, "");
 
 const state = {
   token: localStorage.getItem("archive_admin_token") || null,
@@ -1260,7 +1261,11 @@ async function apiJson(url, options = {}) {
 function apiFetch(url, options = {}) {
   const headers = new Headers(options.headers || {});
   if (state.token) headers.set("authorization", `Bearer ${state.token}`);
-  return fetch(url, { ...options, headers });
+  return fetch(resolveApiUrl(url), { ...options, headers });
+}
+
+function resolveApiUrl(path) {
+  return API_BASE ? `${API_BASE}${path}` : path;
 }
 
 function escapeHtml(value) {
