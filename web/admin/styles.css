@@ -1,0 +1,95 @@
+:root {
+  --bg: #f7f7f7;
+  --line: #d0d0d0;
+  --ink: #1e1e1e;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+header {
+  padding: 1rem 1.25rem;
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+}
+
+header h1 { margin: 0; }
+header p { margin: 0.25rem 0 0; }
+
+main {
+  width: min(1200px, calc(100% - 2rem));
+  margin: 1rem auto;
+  display: grid;
+  gap: 1rem;
+}
+
+.panel {
+  background: #fff;
+  border: 1px solid var(--line);
+  padding: 0.95rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.grid-two,
+.grid-three {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.grid-two { grid-template-columns: 1fr 1fr; }
+.grid-three { grid-template-columns: repeat(3, minmax(160px, 1fr)); }
+
+label { display: grid; gap: 0.25rem; font-size: 0.9rem; }
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+  padding: 0.45rem;
+  border: 1px solid var(--line);
+}
+
+button {
+  background: #111;
+  color: #fff;
+  cursor: pointer;
+}
+
+pre {
+  border: 1px solid var(--line);
+  padding: 0.5rem;
+  background: #fafafa;
+  overflow: auto;
+}
+
+.review-card {
+  border: 1px solid var(--line);
+  padding: 0.5rem;
+  margin-top: 0.5rem;
+  background: #fcfcfc;
+}
+
+.review-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+@media (max-width: 900px) {
+  .grid-two,
+  .grid-three {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,152 @@
+:root {
+  --bg: #f3f2ef;
+  --ink: #1e1e1e;
+  --card: #ffffff;
+  --line: #d5d5d5;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  color: var(--ink);
+  background: var(--bg);
+}
+
+.header {
+  padding: 1.25rem;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.7rem;
+}
+
+.header p {
+  margin: 0.35rem 0 0;
+}
+
+.layout {
+  width: min(1280px, calc(100% - 2rem));
+  margin: 1rem auto;
+  display: grid;
+  gap: 1rem;
+}
+
+.search-card,
+.results-card {
+  border: 1px solid var(--line);
+  background: var(--card);
+  padding: 1rem;
+}
+
+.search-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(160px, 1fr));
+  gap: 0.75rem;
+  align-items: end;
+}
+
+label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.95rem;
+}
+
+input,
+select,
+button {
+  font: inherit;
+  padding: 0.5rem;
+  border: 1px solid var(--line);
+}
+
+button {
+  cursor: pointer;
+  background: #1f1f1f;
+  color: #fff;
+}
+
+.results-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: baseline;
+}
+
+.split {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 1rem;
+}
+
+.table-wrap {
+  overflow: auto;
+  border: 1px solid var(--line);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
+}
+
+th, td {
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+th {
+  background: #f4f4f4;
+  position: sticky;
+  top: 0;
+}
+
+tbody tr { cursor: pointer; }
+
+tbody tr:hover { background: #fafafa; }
+
+.detail {
+  border: 1px solid var(--line);
+  padding: 0.75rem;
+  background: #fcfcfc;
+}
+
+.detail img {
+  max-width: 100%;
+  border: 1px solid var(--line);
+}
+
+.scan-wrap {
+  position: relative;
+}
+
+.scan-highlight {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(210, 0, 0, 0.75);
+  box-shadow: 0 0 0 2px rgba(210, 0, 0, 0.2);
+}
+
+.citation {
+  font-size: 0.9rem;
+  border-top: 1px solid var(--line);
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+}
+
+@media (max-width: 960px) {
+  .search-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .split {
+    grid-template-columns: 1fr;
+  }
+}

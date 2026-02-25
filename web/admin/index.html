@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>1863 Archive Admin</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>1863 Archive Admin Portal</h1>
+      <p>Source management, transcription, review, and import workflows.</p>
+    </header>
+
+    <main>
+      <section class="panel">
+        <h2>Login</h2>
+        <form id="login-form" class="grid-two">
+          <label>Email <input name="email" required /></label>
+          <label>Password <input name="password" type="password" required /></label>
+          <button type="submit">Sign In</button>
+        </form>
+        <p id="auth-state">Not authenticated.</p>
+      </section>
+
+      <section class="panel">
+        <h2>1) Source Manager</h2>
+        <div class="actions">
+          <button data-load="repositories">Load Repositories</button>
+          <button data-load="sources">Load Sources</button>
+          <button data-load="source_items">Load Source Items</button>
+          <button data-load="pages">Load Pages</button>
+        </div>
+
+        <form id="source-form" class="grid-three">
+          <label>Table
+            <select name="table" required>
+              <option value="repositories">repositories</option>
+              <option value="sources">sources</option>
+              <option value="source_items">source_items</option>
+              <option value="pages">pages</option>
+            </select>
+          </label>
+          <label>JSON Payload
+            <textarea name="payload" rows="6" placeholder='{"name":"NC Archives"}'></textarea>
+          </label>
+          <button type="submit">Create Record</button>
+        </form>
+        <pre id="source-output"></pre>
+      </section>
+
+      <section class="panel">
+        <h2>2) Transcription Workspace</h2>
+        <form id="transcription-form" class="grid-three">
+          <label>Page ID <input name="page_id" type="number" required /></label>
+          <label>County ID <input name="county_id" type="number" required /></label>
+          <label>District ID <input name="district_id" type="number" /></label>
+          <label>Taxpayer (as-written) <input name="taxpayer_name_original" required /></label>
+          <label>Taxpayer (normalized) <input name="taxpayer_name_normalized" /></label>
+          <label>Enslaved Name (as-written) <input name="enslaved_name_original" required /></label>
+          <label>Enslaved Name (normalized) <input name="enslaved_name_normalized" /></label>
+          <label>Sequence on page <input name="sequence_on_page" type="number" /></label>
+          <label>Line number <input name="line_number" /></label>
+          <label>Year <input name="year" type="number" value="1863" /></label>
+          <label>Age (original) <input name="age_original" /></label>
+          <label>Category/Complexion <input name="category_original" /></label>
+          <label>Value (original) <input name="value_original" /></label>
+          <label>Remarks <input name="remarks_original" /></label>
+          <label>Confidence 0-1 <input name="transcription_confidence" type="number" min="0" max="1" step="0.01" /></label>
+          <button type="submit">Save Draft</button>
+        </form>
+        <pre id="transcription-output"></pre>
+      </section>
+
+      <section class="panel">
+        <h2>3) Review Queue</h2>
+        <button id="load-review">Load Pending Items</button>
+        <div id="review-list"></div>
+      </section>
+
+      <section class="panel">
+        <h2>4) Bulk Import</h2>
+        <form id="bulk-form" class="grid-two">
+          <label>Format
+            <select name="format">
+              <option value="csv">CSV</option>
+              <option value="json">JSON</option>
+            </select>
+          </label>
+          <label>File
+            <input type="file" name="file" required />
+          </label>
+          <button type="submit">Import</button>
+        </form>
+        <pre id="bulk-output"></pre>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>1863 NC Tax Assessment Archive</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="header">
+      <h1>1863 North Carolina Tax Assessment Archive</h1>
+      <p>Search enslaved person names from surviving county tax records.</p>
+    </header>
+
+    <main class="layout">
+      <section class="search-card">
+        <h2>Search Enslaved Name Entries</h2>
+        <form id="search-form" class="search-grid">
+          <label>
+            Name
+            <input id="name" name="name" required placeholder="e.g., Julia" />
+          </label>
+
+          <label>
+            Match Mode
+            <select id="match_mode" name="match_mode">
+              <option value="fuzzy" selected>Fuzzy</option>
+              <option value="exact">Exact</option>
+              <option value="partial">Partial</option>
+            </select>
+          </label>
+
+          <label>
+            County ID
+            <input id="county_id" name="county_id" type="number" min="1" />
+          </label>
+
+          <label>
+            District ID
+            <input id="district_id" name="district_id" type="number" min="1" />
+          </label>
+
+          <label>
+            Year
+            <input id="year" name="year" type="number" value="1863" />
+          </label>
+
+          <label>
+            Taxpayer Name (optional)
+            <input id="taxpayer_name" name="taxpayer_name" />
+          </label>
+
+          <button type="submit">Search Archive</button>
+        </form>
+      </section>
+
+      <section class="results-card">
+        <div class="results-header">
+          <h2>Results</h2>
+          <p id="summary">No search yet.</p>
+        </div>
+
+        <div class="split">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Enslaved Name (As-Written)</th>
+                  <th>Normalized</th>
+                  <th>County / District</th>
+                  <th>Taxpayer</th>
+                  <th>Attributes</th>
+                </tr>
+              </thead>
+              <tbody id="results-body"></tbody>
+            </table>
+          </div>
+
+          <article id="detail" class="detail">
+            <h3>Record Detail</h3>
+            <p>Select a result row to view scan, citation chain, and line context.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
