@@ -3,98 +3,104 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>1863 Archive Admin</title>
+    <title>1863 NC Tax Assessment Admin</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <header>
-      <h1>1863 Archive Admin Portal</h1>
-      <p>Source management, transcription, review, and import workflows.</p>
-    </header>
-
-    <main>
-      <section class="panel">
-        <h2>Login</h2>
-        <form id="login-form" class="grid-two">
-          <label>Email <input name="email" required /></label>
-          <label>Password <input name="password" type="password" required /></label>
-          <button type="submit">Sign In</button>
-        </form>
-        <p id="auth-state">Not authenticated.</p>
-      </section>
-
-      <section class="panel">
-        <h2>1) Source Manager</h2>
-        <div class="actions">
-          <button data-load="repositories">Load Repositories</button>
-          <button data-load="sources">Load Sources</button>
-          <button data-load="source_items">Load Source Items</button>
-          <button data-load="pages">Load Pages</button>
+    <div class="admin-shell">
+      <header class="topbar">
+        <div class="topbar-left">
+          <h1>1863 NC Tax Assessment Archive</h1>
+          <span id="env-badge" class="env-badge">Staging</span>
         </div>
+        <div class="topbar-center">
+          <input id="admin-search" type="search" placeholder="Search admin records..." />
+        </div>
+        <div class="topbar-right">
+          <div id="user-meta" class="user-meta">Role: public</div>
+          <button id="logout-btn" class="ghost-btn" type="button">Logout</button>
+        </div>
+      </header>
 
-        <form id="source-form" class="grid-three">
-          <label>Table
-            <select name="table" required>
-              <option value="repositories">repositories</option>
-              <option value="sources">sources</option>
-              <option value="source_items">source_items</option>
-              <option value="pages">pages</option>
-            </select>
-          </label>
-          <label>JSON Payload
-            <textarea name="payload" rows="6" placeholder='{"name":"NC Archives"}'></textarea>
-          </label>
-          <button type="submit">Create Record</button>
-        </form>
-        <pre id="source-output"></pre>
-      </section>
+      <aside class="sidebar">
+        <nav id="nav" aria-label="Admin sections">
+          <p class="nav-group">Dashboard</p>
+          <button data-route="dashboard" class="nav-item active">Dashboard</button>
 
-      <section class="panel">
-        <h2>2) Transcription Workspace</h2>
-        <form id="transcription-form" class="grid-three">
-          <label>Page ID <input name="page_id" type="number" required /></label>
-          <label>County ID <input name="county_id" type="number" required /></label>
-          <label>District ID <input name="district_id" type="number" /></label>
-          <label>Taxpayer (as-written) <input name="taxpayer_name_original" required /></label>
-          <label>Taxpayer (normalized) <input name="taxpayer_name_normalized" /></label>
-          <label>Enslaved Name (as-written) <input name="enslaved_name_original" required /></label>
-          <label>Enslaved Name (normalized) <input name="enslaved_name_normalized" /></label>
-          <label>Sequence on page <input name="sequence_on_page" type="number" /></label>
-          <label>Line number <input name="line_number" /></label>
-          <label>Year <input name="year" type="number" value="1863" /></label>
-          <label>Age (original) <input name="age_original" /></label>
-          <label>Category/Complexion <input name="category_original" /></label>
-          <label>Value (original) <input name="value_original" /></label>
-          <label>Remarks <input name="remarks_original" /></label>
-          <label>Confidence 0-1 <input name="transcription_confidence" type="number" min="0" max="1" step="0.01" /></label>
-          <button type="submit">Save Draft</button>
-        </form>
-        <pre id="transcription-output"></pre>
-      </section>
+          <p class="nav-group">Coverage (Counties & Districts)</p>
+          <button data-route="coverage-counties" class="nav-item">Counties</button>
+          <button data-route="coverage-districts" class="nav-item">Districts</button>
 
-      <section class="panel">
-        <h2>3) Review Queue</h2>
-        <button id="load-review">Load Pending Items</button>
-        <div id="review-list"></div>
-      </section>
+          <p class="nav-group">Sources</p>
+          <button data-route="sources-repositories" class="nav-item">Repositories</button>
+          <button data-route="sources-sources" class="nav-item">Sources</button>
+          <button data-route="sources-items" class="nav-item">Source Items</button>
+          <button data-route="sources-pages" class="nav-item">Pages (Scans)</button>
 
-      <section class="panel">
-        <h2>4) Bulk Import</h2>
-        <form id="bulk-form" class="grid-two">
-          <label>Format
-            <select name="format">
-              <option value="csv">CSV</option>
-              <option value="json">JSON</option>
-            </select>
-          </label>
-          <label>File
-            <input type="file" name="file" required />
-          </label>
-          <button type="submit">Import</button>
-        </form>
-        <pre id="bulk-output"></pre>
-      </section>
-    </main>
+          <p class="nav-group">Transcription</p>
+          <button data-route="transcription-queue" class="nav-item">Queue</button>
+          <button data-route="transcription-workspace" class="nav-item">Workspace</button>
+          <button data-route="transcription-drafts" class="nav-item">My Drafts</button>
+
+          <p class="nav-group">Review</p>
+          <button data-route="review-queue" class="nav-item">Review Queue</button>
+          <button data-route="review-approved" class="nav-item">Approved</button>
+          <button data-route="review-rejected" class="nav-item">Rejected</button>
+
+          <p class="nav-group">People</p>
+          <button data-route="people-taxpayers" class="nav-item">Taxpayers</button>
+          <button data-route="people-enslaved" class="nav-item">Enslaved People</button>
+          <button data-route="people-aliases" class="nav-item">Aliases</button>
+
+          <p class="nav-group">Imports</p>
+          <button data-route="imports" class="nav-item">Import Wizard</button>
+
+          <p class="nav-group">Audit Log</p>
+          <button data-route="audit-log" class="nav-item">Audit Log</button>
+
+          <p class="nav-group">Settings</p>
+          <button data-route="settings" class="nav-item">Users & Roles</button>
+        </nav>
+      </aside>
+
+      <main class="content">
+        <section id="auth-panel" class="panel auth-panel">
+          <h2>Sign In</h2>
+          <form id="login-form" class="form-grid two">
+            <label>Email <input name="email" type="email" required /></label>
+            <label>Password <input name="password" type="password" required /></label>
+            <button type="submit">Sign In</button>
+          </form>
+          <p id="auth-state">Not authenticated.</p>
+        </section>
+
+        <section id="app-panel" class="panel hidden">
+          <div id="page-header" class="page-header"></div>
+          <div id="page-content"></div>
+        </section>
+      </main>
+    </div>
+
+    <div id="drawer" class="drawer hidden" role="dialog" aria-modal="true">
+      <div class="drawer-card">
+        <div class="drawer-head">
+          <h3 id="drawer-title">Edit</h3>
+          <button id="drawer-close" class="ghost-btn" type="button">Close</button>
+        </div>
+        <form id="drawer-form" class="form-grid"></form>
+      </div>
+    </div>
+
+    <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <h3 id="modal-title">Confirm</h3>
+        <p id="modal-message"></p>
+        <div class="modal-actions">
+          <button id="modal-cancel" class="ghost-btn" type="button">Cancel</button>
+          <button id="modal-confirm" type="button">Confirm</button>
+        </div>
+      </div>
+    </div>
 
     <script src="./app.js"></script>
   </body>

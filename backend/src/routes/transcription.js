@@ -296,6 +296,37 @@ transcriptionRouter.post(
   })
 );
 
+transcriptionRouter.get(
+  "/entries/by-page/:pageId",
+  asyncHandler(async (req, res) => {
+    const result = await withTransaction(async (client) => {
+      const rows = await client.query(
+        `
+        SELECT
+          tae.id,
+          tae.page_id,
+          tae.sequence_on_page,
+          tae.line_number,
+          tae.year,
+          t.name_original AS taxpayer_name_original,
+          ep.name_original AS enslaved_name_original,
+          ed.status,
+          ed.transcription_confidence
+        FROM tax_assessment_entries tae
+        JOIN enslavement_details ed ON ed.entry_id = tae.id
+        JOIN taxpayers t ON t.id = tae.taxpayer_id
+        JOIN enslaved_people ep ON ep.id = tae.enslaved_person_id
+        WHERE tae.page_id = $1
+        ORDER BY tae.sequence_on_page NULLS LAST, tae.id
+        `,
+        [req.params.pageId]
+      );
+      return rows.rows;
+    });
+    res.json(result);
+  })
+);
+
 transcriptionRouter.post(
   "/bulk-import",
   upload.single("file"),

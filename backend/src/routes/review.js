@@ -43,6 +43,51 @@ reviewRouter.get(
   })
 );
 
+reviewRouter.get(
+  "/status/:status",
+  asyncHandler(async (req, res) => {
+    const allowed = new Set(["approved", "rejected", "pending_review"]);
+    const status = req.params.status;
+    if (!allowed.has(status)) {
+      return res.status(400).json({ error: "invalid_status" });
+    }
+
+    const result = await query(
+      `
+      SELECT
+        tae.id,
+        tae.year,
+        tae.line_number,
+        tae.sequence_on_page,
+        c.name AS county_name,
+        d.name AS district_name,
+        ep.name_original AS enslaved_name_original,
+        ep.name_normalized AS enslaved_name_normalized,
+        t.name_original AS taxpayer_name_original,
+        t.name_normalized AS taxpayer_name_normalized,
+        ed.status,
+        ed.transcription_confidence,
+        ed.remarks_original,
+        p.page_number_label,
+        p.image_thumbnail_url
+      FROM tax_assessment_entries tae
+      JOIN enslavement_details ed ON ed.entry_id = tae.id
+      JOIN enslaved_people ep ON ep.id = tae.enslaved_person_id
+      JOIN taxpayers t ON t.id = tae.taxpayer_id
+      JOIN pages p ON p.id = tae.page_id
+      JOIN counties c ON c.id = tae.county_id
+      LEFT JOIN districts d ON d.id = tae.district_id
+      WHERE ed.status = $1
+      ORDER BY tae.updated_at DESC
+      LIMIT 300
+      `,
+      [status]
+    );
+
+    return res.json(result.rows);
+  })
+);
+
 reviewRouter.post(
   "/entries/:id/decision",
   asyncHandler(async (req, res) => {
