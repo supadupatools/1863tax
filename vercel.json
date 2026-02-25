@@ -2,10 +2,14 @@
   "rewrites": [
     {
       "source": "/admin",
-      "destination": "/admin/"
+      "destination": "/web/admin/index.html"
     },
     {
-      "source": "/admin/:path*",
+      "source": "/admin/",
+      "destination": "/web/admin/index.html"
+    },
+    {
+      "source": "/admin/:path((?!index\\.html$).*)",
       "destination": "/web/admin/:path*"
     },
     {
@@ -13,7 +17,11 @@
       "destination": "/web/public/index.html"
     },
     {
-      "source": "/:path*",
+      "source": "/public/:path*",
+      "destination": "/web/public/:path*"
+    },
+    {
+      "source": "/:path((?!admin(?:/|$))(?!api(?:/|$)).*)",
       "destination": "/web/public/:path*"
     }
   ]
