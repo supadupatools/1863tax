@@ -9,7 +9,7 @@
       "destination": "/web/admin/index.html"
     },
     {
-      "source": "/admin/:path((?!index\\.html$).*)",
+      "source": "/admin/:path*",
       "destination": "/web/admin/:path*"
     },
     {
@@ -17,11 +17,7 @@
       "destination": "/web/public/index.html"
     },
     {
-      "source": "/public/:path*",
-      "destination": "/web/public/:path*"
-    },
-    {
-      "source": "/:path((?!admin(?:/|$))(?!api(?:/|$)).*)",
+      "source": "/:path*",
       "destination": "/web/public/:path*"
     }
   ]
