@@ -1,5 +1,7 @@
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE EXTENSION IF NOT EXISTS unaccent;
+CREATE SCHEMA IF NOT EXISTS archive1863;
+SET search_path TO archive1863, public;
 
 CREATE TABLE IF NOT EXISTS app_users (
   id BIGSERIAL PRIMARY KEY,
@@ -90,9 +92,7 @@ CREATE TABLE IF NOT EXISTS taxpayers (
   district_id BIGINT REFERENCES districts(id) ON DELETE SET NULL,
   name_original TEXT NOT NULL,
   name_normalized TEXT NOT NULL,
-  name_tokens TSVECTOR GENERATED ALWAYS AS (
-    to_tsvector('simple', unaccent(COALESCE(name_normalized, '') || ' ' || COALESCE(name_original, '')))
-  ) STORED,
+  name_tokens TSVECTOR,
   notes TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -102,9 +102,7 @@ CREATE TABLE IF NOT EXISTS enslaved_people (
   id BIGSERIAL PRIMARY KEY,
   name_original TEXT NOT NULL,
   name_normalized TEXT NOT NULL,
-  name_tokens TSVECTOR GENERATED ALWAYS AS (
-    to_tsvector('simple', unaccent(COALESCE(name_normalized, '') || ' ' || COALESCE(name_original, '')))
-  ) STORED,
+  name_tokens TSVECTOR,
   gender TEXT,
   approx_birth_year INT,
   notes TEXT,
@@ -180,6 +178,17 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION set_name_tokens()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.name_tokens := to_tsvector(
+    'simple',
+    unaccent(COALESCE(NEW.name_normalized, '') || ' ' || COALESCE(NEW.name_original, ''))
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 DO $$
 DECLARE
   t TEXT;
@@ -202,6 +211,34 @@ BEGIN
     EXECUTE format('CREATE TRIGGER trg_touch_updated_at_%I BEFORE UPDATE ON %I FOR EACH ROW EXECUTE FUNCTION touch_updated_at()', t, t);
   END LOOP;
 END $$;
+
+DROP TRIGGER IF EXISTS trg_set_name_tokens_taxpayers ON taxpayers;
+CREATE TRIGGER trg_set_name_tokens_taxpayers
+BEFORE INSERT OR UPDATE OF name_original, name_normalized
+ON taxpayers
+FOR EACH ROW
+EXECUTE FUNCTION set_name_tokens();
+
+DROP TRIGGER IF EXISTS trg_set_name_tokens_enslaved_people ON enslaved_people;
+CREATE TRIGGER trg_set_name_tokens_enslaved_people
+BEFORE INSERT OR UPDATE OF name_original, name_normalized
+ON enslaved_people
+FOR EACH ROW
+EXECUTE FUNCTION set_name_tokens();
+
+UPDATE taxpayers
+SET name_tokens = to_tsvector(
+  'simple',
+  unaccent(COALESCE(name_normalized, '') || ' ' || COALESCE(name_original, ''))
+)
+WHERE name_tokens IS NULL;
+
+UPDATE enslaved_people
+SET name_tokens = to_tsvector(
+  'simple',
+  unaccent(COALESCE(name_normalized, '') || ' ' || COALESCE(name_original, ''))
+)
+WHERE name_tokens IS NULL;
 
 -- Helpful function for consistent citations in APIs or SQL clients.
 CREATE OR REPLACE VIEW v_entry_citation_chain AS

@@ -8,6 +8,10 @@ export const pool = new Pool({
     : false
 });
 
+pool.on("connect", async (client) => {
+  await client.query("SET search_path TO archive1863, public");
+});
+
 export async function query(text, params = []) {
   return pool.query(text, params);
 }

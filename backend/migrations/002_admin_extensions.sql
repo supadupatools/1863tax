@@ -1,3 +1,5 @@
+SET search_path TO archive1863, public;
+
 ALTER TABLE counties
   ADD COLUMN IF NOT EXISTS enabled BOOLEAN NOT NULL DEFAULT TRUE;
 
@@ -22,14 +24,8 @@ CREATE TABLE IF NOT EXISTS aliases (
 CREATE INDEX IF NOT EXISTS idx_aliases_entity ON aliases(entity_type, entity_id);
 CREATE INDEX IF NOT EXISTS idx_aliases_alias_norm_trgm ON aliases USING GIN(alias_normalized gin_trgm_ops);
 
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_trigger WHERE tgname = 'trg_touch_updated_at_aliases'
-  ) THEN
-    CREATE TRIGGER trg_touch_updated_at_aliases
-    BEFORE UPDATE ON aliases
-    FOR EACH ROW
-    EXECUTE FUNCTION touch_updated_at();
-  END IF;
-END $$;
+DROP TRIGGER IF EXISTS trg_touch_updated_at_aliases ON aliases;
+CREATE TRIGGER trg_touch_updated_at_aliases
+BEFORE UPDATE ON aliases
+FOR EACH ROW
+EXECUTE FUNCTION touch_updated_at();
