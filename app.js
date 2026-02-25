@@ -13,6 +13,18 @@ const resultSummary = document.getElementById("result-summary");
 
 let currentRecords = [];
 let activeRecordId = null;
+let supabaseClient = null;
+
+const SUPABASE_URL = "https://woudkcanrrgcyqcmhapo.supabase.co";
+const SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndvdWRrY2FucnJnY3lxY21oYXBvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2NzUxODEsImV4cCI6MjA4NzI1MTE4MX0.P9Zp3mj79Rj0r5a5Ole8L2Ca1cZfIG5sQN3moKiwqYg";
+const CANDIDATE_TABLES = ["records", "tax_assessments"];
+const NAME_COLUMNS = ["name", "full_name", "person_name"];
+const COUNTY_COLUMNS = ["county", "county_name"];
+
+if (window.supabase?.createClient) {
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
 
 // Temporary data until Supabase is connected.
 const sampleRecords = [
@@ -68,7 +80,7 @@ searchForm.addEventListener("submit", async (event) => {
   const queryCounty = countySelect.value;
   if (!queryName || !queryCounty) return;
 
-  // Replace this with a Supabase query once backend is connected.
+  resultSummary.textContent = `Searching records for "${queryName}" in ${queryCounty}...`;
   currentRecords = await fetchRecords(queryName, queryCounty);
   activeRecordId = currentRecords[0]?.id ?? null;
 
@@ -178,21 +190,60 @@ function activateFromTable(recordId) {
 }
 
 async function fetchRecords(name, county) {
+  if (!supabaseClient) {
+    console.warn("Supabase client unavailable. Falling back to sample data.");
+    return filterSampleRecords(name, county);
+  }
+
+  for (const tableName of CANDIDATE_TABLES) {
+    for (const nameColumn of NAME_COLUMNS) {
+      for (const countyColumn of COUNTY_COLUMNS) {
+        const { data, error } = await supabaseClient
+          .from(tableName)
+          .select("*")
+          .ilike(nameColumn, `%${name}%`)
+          .eq(countyColumn, county)
+          .limit(100);
+
+        if (!error) {
+          return (data ?? []).map(normalizeRecord).filter(Boolean);
+        }
+      }
+    }
+  }
+
+  console.warn("Supabase query failed for all candidate tables; using sample data.");
+  return filterSampleRecords(name, county);
+}
+
+function filterSampleRecords(name, county) {
   const lowered = name.toLowerCase();
   return sampleRecords.filter(
     (record) =>
       record.county === county &&
       record.name.toLowerCase().includes(lowered),
   );
+}
 
-  // Supabase-ready placeholder:
-  // const { data, error } = await supabase
-  //   .from("records")
-  //   .select("*")
-  //   .ilike("name", `%${name}%`)
-  //   .eq("county", county);
-  // if (error) throw error;
-  // return data ?? [];
+function normalizeRecord(row) {
+  if (!row) return null;
+
+  const normalized = {
+    id: String(row.id ?? crypto.randomUUID()),
+    name: String(row.name ?? row.full_name ?? "Unknown"),
+    county: String(row.county ?? "Unknown"),
+    recordType: String(row.record_type ?? row.type ?? "Tax Record"),
+    date: String(row.date ?? row.record_date ?? row.assessment_date ?? "Unknown"),
+    reference: String(row.reference ?? row.source_reference ?? row.book_folio ?? "N/A"),
+    details: String(
+      row.details ??
+        row.notes ??
+        row.transcript_notes ??
+        "No additional notes available.",
+    ),
+  };
+
+  return normalized;
 }
 
 function escapeHtml(text) {

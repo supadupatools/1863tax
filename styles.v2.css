@@ -63,7 +63,6 @@ body {
   text-align: center;
   width: min(86%, 1180px);
   z-index: 1;
-  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.18);
 }
 
 .poster::before,
