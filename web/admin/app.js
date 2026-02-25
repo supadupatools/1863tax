@@ -1,7 +1,4 @@
-const loginForm = document.getElementById("login-form");
-const authPanel = document.getElementById("auth-panel");
 const appPanel = document.getElementById("app-panel");
-const authState = document.getElementById("auth-state");
 const userMeta = document.getElementById("user-meta");
 const logoutBtn = document.getElementById("logout-btn");
 const nav = document.getElementById("nav");
@@ -21,7 +18,7 @@ const envBadge = document.getElementById("env-badge");
 
 const state = {
   token: localStorage.getItem("archive_admin_token") || null,
-  user: null,
+  user: getStoredUser(),
   route: "dashboard",
   drawerSubmit: null,
   modalConfirm: null,
@@ -266,7 +263,6 @@ const TABLE_SCHEMAS = {
   }
 };
 
-loginForm.addEventListener("submit", handleLogin);
 logoutBtn.addEventListener("click", handleLogout);
 drawerClose.addEventListener("click", closeDrawer);
 modalCancel.addEventListener("click", closeModal);
@@ -292,52 +288,33 @@ if (window.location.hostname.includes("localhost")) {
 
 hydrateAuth();
 
-async function handleLogin(event) {
-  event.preventDefault();
-  const form = new FormData(loginForm);
-  const payload = {
-    email: form.get("email"),
-    password: form.get("password")
-  };
-
-  const response = await fetch("/api/auth/login", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(payload)
-  });
-  const data = await response.json();
-
-  if (!response.ok) {
-    authState.textContent = `Login failed: ${data.error || "unknown"}`;
-    return;
-  }
-
-  state.token = data.token;
-  state.user = data.user;
-  localStorage.setItem("archive_admin_token", state.token);
-  authState.textContent = "Authenticated.";
-  hydrateAuth();
-}
-
 function handleLogout() {
   state.token = null;
   state.user = null;
   localStorage.removeItem("archive_admin_token");
-  hydrateAuth();
+  localStorage.removeItem("archive_admin_user");
+  window.location.replace("/admin/login");
 }
 
 function hydrateAuth() {
   if (!state.token) {
-    authPanel.classList.remove("hidden");
-    appPanel.classList.add("hidden");
-    userMeta.textContent = "Role: public";
+    window.location.replace("/admin/login");
     return;
   }
 
-  authPanel.classList.add("hidden");
   appPanel.classList.remove("hidden");
   userMeta.textContent = `Role: ${state.user?.role || "authenticated"}`;
   renderRoute();
+}
+
+function getStoredUser() {
+  try {
+    const raw = localStorage.getItem("archive_admin_user");
+    if (raw) return JSON.parse(raw);
+  } catch (_error) {
+    return null;
+  }
+  return null;
 }
 
 async function renderRoute() {

@@ -9,6 +9,14 @@
       "destination": "/web/admin/index.html"
     },
     {
+      "source": "/admin/login",
+      "destination": "/web/admin/login.html"
+    },
+    {
+      "source": "/admin/login/",
+      "destination": "/web/admin/login.html"
+    },
+    {
       "source": "/admin/:path*",
       "destination": "/web/admin/:path*"
     },

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Login | 1863 NC Tax Assessment Archive</title>
+    <base href="/admin/" />
+    <link rel="stylesheet" href="/admin/styles.css" />
+    <style>
+      body { min-height: 100vh; display: grid; place-items: center; }
+      .login-shell { width: min(460px, calc(100% - 2rem)); }
+      .login-card { background: #fff; border: 1px solid #d4d8df; padding: 1rem; }
+      .login-card h1 { margin-top: 0; font-size: 1.25rem; }
+      .login-card p { color: #556070; }
+    </style>
+  </head>
+  <body>
+    <main class="login-shell">
+      <section class="login-card">
+        <h1>Admin Sign In</h1>
+        <p>1863 NC Tax Assessment Archive</p>
+        <form id="login-form" class="form-grid">
+          <label>Email <input name="email" type="email" required /></label>
+          <label>Password <input name="password" type="password" required /></label>
+          <button type="submit">Sign In</button>
+        </form>
+        <p id="auth-state">Enter credentials to continue.</p>
+      </section>
+    </main>
+
+    <script src="/admin/login.js"></script>
+  </body>
+</html>
