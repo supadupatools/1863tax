@@ -15,7 +15,11 @@ const modalCancel = document.getElementById("modal-cancel");
 const modalConfirm = document.getElementById("modal-confirm");
 const adminSearch = document.getElementById("admin-search");
 const envBadge = document.getElementById("env-badge");
-const API_BASE = String(window.ADMIN_API_BASE || "").replace(/\/+$/, "");
+const schema = window.ARCHIVE_SCHEMA || "archive1863";
+const supabaseClient = window.supabase.createClient(
+  window.SUPABASE_URL,
+  window.SUPABASE_PUBLISHABLE_KEY
+);
 
 const state = {
   token: localStorage.getItem("archive_admin_token") || null,
@@ -294,6 +298,7 @@ function handleLogout() {
   state.user = null;
   localStorage.removeItem("archive_admin_token");
   localStorage.removeItem("archive_admin_user");
+  supabaseClient.auth.signOut().catch(() => {});
   window.location.replace("/admin/login");
 }
 
@@ -1250,22 +1255,291 @@ function runGlobalSearch(term) {
 }
 
 async function apiJson(url, options = {}) {
-  const response = await apiFetch(url, options);
-  const payload = await response.json();
-  if (!response.ok) {
-    throw new Error(payload.message || payload.error || `Request failed: ${response.status}`);
+  const method = (options.method || "GET").toUpperCase();
+  const body = options.body ? JSON.parse(options.body) : null;
+
+  if (url.startsWith("/api/admin/dashboard/stats")) {
+    return queryDashboardStats();
   }
-  return payload;
+
+  if (url.startsWith("/api/admin/my-drafts")) {
+    return queryMyDrafts();
+  }
+
+  if (url.startsWith("/api/admin/transcription-queue")) {
+    const params = new URLSearchParams(url.split("?")[1] || "");
+    return queryTranscriptionQueue(params);
+  }
+
+  if (url.startsWith("/api/admin/audit-log")) {
+    const params = new URLSearchParams(url.split("?")[1] || "");
+    return queryAuditLog(params);
+  }
+
+  if (url.startsWith("/api/review/queue")) {
+    return queryReviewRows("pending_review,rejected");
+  }
+
+  if (url.startsWith("/api/review/status/")) {
+    const status = url.split("/").pop();
+    return queryReviewRows(status);
+  }
+
+  if (url.startsWith("/api/review/entries/") && url.endsWith("/decision")) {
+    const entryId = Number(url.split("/")[4]);
+    return updateReviewDecision(entryId, body);
+  }
+
+  if (url.startsWith("/api/transcriptions/entries/by-page/")) {
+    const pageId = Number(url.split("/").pop());
+    return queryEntriesByPage(pageId);
+  }
+
+  if (url === "/api/transcriptions/entries" && method === "POST") {
+    return createTranscriptionEntry(body);
+  }
+
+  if (url.startsWith("/api/transcriptions/entries/") && url.endsWith("/submit")) {
+    const entryId = Number(url.split("/")[4]);
+    return submitEntryForReview(entryId);
+  }
+
+  if (url === "/api/transcriptions/bulk-import") {
+    throw new Error("Bulk import requires backend or edge function. Use SQL/CSV import in Supabase for now.");
+  }
+
+  if (url.startsWith("/api/admin/users/invite")) {
+    return inviteUser(body);
+  }
+
+  if (url.startsWith("/api/admin/")) {
+    return handleAdminTableRoute(url, method, body);
+  }
+
+  throw new Error(`Unsupported route in Supabase mode: ${url}`);
 }
 
 function apiFetch(url, options = {}) {
-  const headers = new Headers(options.headers || {});
-  if (state.token) headers.set("authorization", `Bearer ${state.token}`);
-  return fetch(resolveApiUrl(url), { ...options, headers });
+  return apiJson(url, options);
 }
 
-function resolveApiUrl(path) {
-  return API_BASE ? `${API_BASE}${path}` : path;
+async function handleAdminTableRoute(url, method, payload) {
+  const path = url.replace("/api/admin/", "");
+  const [table, id] = path.split("/");
+  if (!TABLE_SCHEMAS[table] && table !== "app_users") {
+    throw new Error(`Unknown table: ${table}`);
+  }
+
+  if (method === "GET") {
+    let query = supabaseClient.schema(schema).from(table).select("*").order("id", { ascending: false }).limit(300);
+    if (table === "app_users") {
+      query = supabaseClient
+        .schema(schema)
+        .from("user_profiles")
+        .select("auth_user_id, email, display_name, role, is_active, created_at, updated_at")
+        .order("created_at", { ascending: false })
+        .limit(300);
+    }
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
+    return data || [];
+  }
+
+  if (method === "POST") {
+    const { data, error } = await supabaseClient
+      .schema(schema)
+      .from(table)
+      .insert(payload)
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  if (method === "PUT") {
+    const key = table === "app_users" ? "auth_user_id" : "id";
+    const { data, error } = await supabaseClient
+      .schema(schema)
+      .from(table === "app_users" ? "user_profiles" : table)
+      .update(payload)
+      .eq(key, id)
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  if (method === "DELETE") {
+    const { error } = await supabaseClient
+      .schema(schema)
+      .from(table)
+      .delete()
+      .eq("id", id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  }
+
+  throw new Error(`Unsupported method ${method} for ${table}`);
+}
+
+async function queryDashboardStats() {
+  const [pages, drafts, pending, approved, missingDistrict, missingThumb, missingCitation] =
+    await Promise.all([
+      countRows("pages"),
+      countRows("enslavement_details", { status: "draft" }),
+      countRows("enslavement_details", { status: "pending_review" }),
+      countRows("enslavement_details", { status: "approved" }),
+      countRows("pages", { district_id: null }),
+      countRows("pages", { image_thumbnail_url: null }),
+      countRows("sources", { citation_preferred: null })
+    ]);
+
+  return {
+    pages_scanned: pages,
+    entries_draft: drafts,
+    awaiting_review: pending,
+    approved_public: approved,
+    alerts: {
+      missing_district_mapping: missingDistrict,
+      pages_without_thumbnails: missingThumb,
+      sources_missing_citations: missingCitation
+    }
+  };
+}
+
+async function countRows(table, filters = null) {
+  let q = supabaseClient.schema(schema).from(table).select("id", { count: "exact", head: true });
+  if (filters) {
+    for (const [k, v] of Object.entries(filters)) {
+      if (v === null) q = q.is(k, null);
+      else q = q.eq(k, v);
+    }
+  }
+  const { count, error } = await q;
+  if (error) throw new Error(error.message);
+  return count || 0;
+}
+
+async function queryMyDrafts() {
+  const { data, error } = await supabaseClient
+    .schema(schema)
+    .from("v_my_drafts")
+    .select("*")
+    .order("updated_at", { ascending: false })
+    .limit(300);
+  if (error) throw new Error(error.message);
+  return data || [];
+}
+
+async function queryTranscriptionQueue(params) {
+  let q = supabaseClient
+    .schema(schema)
+    .from("v_transcription_queue")
+    .select("*")
+    .order("last_activity", { ascending: false })
+    .limit(300);
+  const countyId = params.get("county_id");
+  const districtId = params.get("district_id");
+  const status = params.get("status");
+  if (countyId) q = q.eq("county_id", countyId);
+  if (districtId) q = q.eq("district_id", districtId);
+  if (status) q = q.eq("entry_status", status);
+  const { data, error } = await q;
+  if (error) throw new Error(error.message);
+  return data || [];
+}
+
+async function queryAuditLog(params) {
+  let q = supabaseClient
+    .schema(schema)
+    .from("audit_log")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(500);
+  if (params.get("user_id")) q = q.eq("actor_user_id", params.get("user_id"));
+  if (params.get("entity")) q = q.eq("table_name", params.get("entity"));
+  if (params.get("since")) q = q.gte("created_at", params.get("since"));
+  const { data, error } = await q;
+  if (error) throw new Error(error.message);
+  return data || [];
+}
+
+async function queryReviewRows(statusCsv) {
+  let q = supabaseClient
+    .schema(schema)
+    .from("v_review_queue")
+    .select("*")
+    .order("updated_at", { ascending: false })
+    .limit(400);
+  const statuses = statusCsv.split(",");
+  if (statuses.length === 1) q = q.eq("status", statuses[0]);
+  else q = q.in("status", statuses);
+  const { data, error } = await q;
+  if (error) throw new Error(error.message);
+  return data || [];
+}
+
+async function updateReviewDecision(entryId, payload) {
+  const { data, error } = await supabaseClient
+    .schema(schema)
+    .from("enslavement_details")
+    .update({
+      status: payload.decision,
+      remarks_original: payload.notes || null
+    })
+    .eq("entry_id", entryId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+async function queryEntriesByPage(pageId) {
+  const { data, error } = await supabaseClient
+    .schema(schema)
+    .from("v_entries_by_page")
+    .select("*")
+    .eq("page_id", pageId)
+    .order("sequence_on_page", { ascending: true });
+  if (error) throw new Error(error.message);
+  return data || [];
+}
+
+async function createTranscriptionEntry(payload) {
+  const { data, error } = await supabaseClient.rpc("create_transcription_entry", {
+    p_payload: payload
+  });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+async function submitEntryForReview(entryId) {
+  const { data, error } = await supabaseClient
+    .schema(schema)
+    .from("enslavement_details")
+    .update({ status: "pending_review" })
+    .eq("entry_id", entryId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+async function inviteUser(payload) {
+  const { data, error } = await supabaseClient
+    .schema(schema)
+    .from("user_profiles")
+    .insert({
+      auth_user_id: payload.auth_user_id,
+      email: payload.email,
+      display_name: payload.display_name || null,
+      role: payload.role || "transcriber",
+      is_active: true
+    })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return { user: data };
 }
 
 function escapeHtml(value) {

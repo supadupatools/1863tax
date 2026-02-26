@@ -1,6 +1,10 @@
 const loginForm = document.getElementById("login-form");
 const authState = document.getElementById("auth-state");
-const API_BASE = String(window.ADMIN_API_BASE || "").replace(/\/+$/, "");
+const supabase = window.supabase.createClient(
+  window.SUPABASE_URL,
+  window.SUPABASE_PUBLISHABLE_KEY
+);
+const schema = window.ARCHIVE_SCHEMA || "archive1863";
 
 if (localStorage.getItem("archive_admin_token")) {
   window.location.replace("/admin/");
@@ -17,34 +21,60 @@ loginForm.addEventListener("submit", async (event) => {
   authState.textContent = "Signing in...";
 
   try {
-    const response = await fetch(resolveApiUrl("/api/auth/login"), {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(payload)
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: payload.email,
+      password: payload.password
     });
-
-    const text = await response.text();
-    let data = {};
-    try {
-      data = text ? JSON.parse(text) : {};
-    } catch (_error) {
-      data = {};
-    }
-    if (!response.ok) {
-      authState.textContent = `Login failed: ${data.error || `HTTP ${response.status}`}`;
+    if (error) {
+      authState.textContent = `Login failed: ${error.message}`;
       return;
     }
 
-    localStorage.setItem("archive_admin_token", data.token);
-    localStorage.setItem("archive_admin_user", JSON.stringify(data.user || {}));
+    const accessToken = data.session?.access_token;
+    const authUser = data.user;
+    if (!accessToken || !authUser?.id) {
+      authState.textContent = "Login failed: missing Supabase session.";
+      return;
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .schema(schema)
+      .from("user_profiles")
+      .select("auth_user_id, role, display_name, is_active, email")
+      .eq("auth_user_id", authUser.id)
+      .maybeSingle();
+
+    if (profileError) {
+      authState.textContent = `Login failed: ${profileError.message}`;
+      return;
+    }
+
+    if (!profile?.is_active) {
+      authState.textContent = "Login failed: account is disabled or missing profile.";
+      await supabase.auth.signOut();
+      return;
+    }
+
+    if (!["admin", "reviewer", "transcriber"].includes(profile.role)) {
+      authState.textContent = "Login failed: insufficient admin role.";
+      await supabase.auth.signOut();
+      return;
+    }
+
+    localStorage.setItem("archive_admin_token", accessToken);
+    localStorage.setItem(
+      "archive_admin_user",
+      JSON.stringify({
+        id: authUser.id,
+        email: profile.email || authUser.email,
+        role: profile.role,
+        displayName: profile.display_name || authUser.email
+      })
+    );
     window.location.replace("/admin/");
   } catch (error) {
     authState.textContent =
       `Login failed: ${error.message}. ` +
-      "Check ADMIN_API_BASE config and backend availability.";
+      "Check Supabase config and user profile/role setup.";
   }
 });
-
-function resolveApiUrl(path) {
-  return API_BASE ? `${API_BASE}${path}` : path;
-}

@@ -2,6 +2,10 @@ const searchForm = document.getElementById("search-form");
 const resultsBody = document.getElementById("results-body");
 const summary = document.getElementById("summary");
 const detail = document.getElementById("detail");
+const supabase = window.supabase.createClient(
+  window.SUPABASE_URL,
+  window.SUPABASE_PUBLISHABLE_KEY
+);
 
 let currentRows = [];
 
@@ -15,17 +19,9 @@ searchForm.addEventListener("submit", async (event) => {
   }
 
   summary.textContent = "Searching...";
-
-  const response = await fetch(`/api/public/search?${params.toString()}`);
-  const payload = await response.json();
-
-  if (!response.ok) {
-    summary.textContent = payload.message || payload.error || "Search failed";
-    return;
-  }
-
-  currentRows = payload.entries;
-  summary.textContent = `${payload.count} records found`;
+  const payload = await searchEntries(params);
+  currentRows = payload;
+  summary.textContent = `${payload.length} records found`;
   renderRows();
 });
 
@@ -51,14 +47,11 @@ function renderRows() {
 }
 
 async function loadDetail(entryId) {
-  const response = await fetch(`/api/public/entries/${entryId}`);
-  const payload = await response.json();
-  if (!response.ok) {
-    detail.innerHTML = `<p>${escapeHtml(payload.error || "Failed to load detail")}</p>`;
+  const entry = await getEntryDetail(entryId);
+  if (!entry) {
+    detail.innerHTML = `<p>Failed to load detail.</p>`;
     return;
   }
-
-  const entry = payload.entry;
   const sequence = Number(entry.sequence_on_page || 0);
   const line = String(entry.line_number || "").trim();
   const estimatedTop = Math.max(5, Math.min(95, sequence > 0 ? sequence * 3 : 50));
@@ -89,6 +82,32 @@ async function loadDetail(entryId) {
       ${entry.image_thumbnail_url ? `<p><a href="${escapeHtml(entry.image_url)}" target="_blank" rel="noopener">Open scan image</a></p>` : ""}
     </div>
   `;
+}
+
+async function searchEntries(params) {
+  const { data, error } = await supabase.rpc("public_search_entries", {
+    p_name: params.get("name"),
+    p_county_id: params.get("county_id") || null,
+    p_district_id: params.get("district_id") || null,
+    p_year: Number(params.get("year") || 1863),
+    p_taxpayer: params.get("taxpayer_name") || null,
+    p_mode: params.get("match_mode") || "fuzzy",
+    p_limit: 100,
+    p_offset: 0
+  });
+  if (error) {
+    summary.textContent = error.message || "Search failed";
+    return [];
+  }
+  return data || [];
+}
+
+async function getEntryDetail(entryId) {
+  const { data, error } = await supabase.rpc("public_get_entry_detail", {
+    p_entry_id: Number(entryId)
+  });
+  if (error || !data?.length) return null;
+  return data[0];
 }
 
 function escapeHtml(value) {
