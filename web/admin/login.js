@@ -157,6 +157,7 @@ async function queryProfileViaRest(userId, accessToken) {
   url.searchParams.set("auth_user_id", `eq.${userId}`);
   const response = await fetch(url.toString(), {
     headers: {
+      "accept-profile": schema,
       apikey: SUPABASE_PUBLISHABLE_KEY,
       authorization: `Bearer ${accessToken}`
     }

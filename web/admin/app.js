@@ -16,16 +16,26 @@ const modalConfirm = document.getElementById("modal-confirm");
 const adminSearch = document.getElementById("admin-search");
 const envBadge = document.getElementById("env-badge");
 const schema = window.ARCHIVE_SCHEMA || "archive1863";
+const initialToken = localStorage.getItem("archive_admin_token") || null;
 const hasSupabaseJs = Boolean(window.supabase?.createClient);
 const supabaseClient = hasSupabaseJs
   ? window.supabase.createClient(
     window.SUPABASE_URL,
-    window.SUPABASE_PUBLISHABLE_KEY
+    window.SUPABASE_PUBLISHABLE_KEY,
+    initialToken
+      ? {
+        global: {
+          headers: {
+            Authorization: `Bearer ${initialToken}`
+          }
+        }
+      }
+      : undefined
   )
   : null;
 
 const state = {
-  token: localStorage.getItem("archive_admin_token") || null,
+  token: initialToken,
   user: getStoredUser(),
   route: "dashboard",
   drawerSubmit: null,
@@ -305,7 +315,7 @@ function handleLogout() {
   window.location.replace("/admin/login");
 }
 
-function hydrateAuth() {
+async function hydrateAuth() {
   if (!hasSupabaseJs) {
     appPanel.classList.remove("hidden");
     pageHeader.innerHTML = "<h2>Admin Runtime Error</h2><p>Supabase JS SDK failed to load.</p>";
@@ -319,6 +329,8 @@ function hydrateAuth() {
     return;
   }
 
+  await refreshUserProfileFromSupabase();
+
   const allowedRoles = new Set(["admin", "reviewer", "transcriber"]);
   if (!state.user?.isActive || !allowedRoles.has(state.user?.role)) {
     localStorage.removeItem("archive_admin_token");
@@ -330,6 +342,37 @@ function hydrateAuth() {
   appPanel.classList.remove("hidden");
   userMeta.textContent = `Role: ${state.user?.role || "authenticated"}`;
   renderRoute();
+}
+
+async function refreshUserProfileFromSupabase() {
+  if (!state.token || !hasSupabaseJs) return;
+  const allowedRoles = new Set(["admin", "reviewer", "transcriber"]);
+  if (state.user?.isActive && allowedRoles.has(state.user?.role)) return;
+
+  try {
+    const { data: userData, error: userError } = await supabaseClient.auth.getUser(state.token);
+    if (userError || !userData?.user?.id) return;
+
+    const { data: profile, error: profileError } = await supabaseClient
+      .schema(schema)
+      .from("user_profiles")
+      .select("auth_user_id, email, display_name, role, is_active")
+      .eq("auth_user_id", userData.user.id)
+      .maybeSingle();
+
+    if (profileError || !profile) return;
+
+    state.user = {
+      id: profile.auth_user_id,
+      email: profile.email || userData.user.email,
+      role: profile.role,
+      displayName: profile.display_name || userData.user.email,
+      isActive: profile.is_active
+    };
+    localStorage.setItem("archive_admin_user", JSON.stringify(state.user));
+  } catch (_error) {
+    // Keep existing local user payload if lookup fails.
+  }
 }
 
 function getStoredUser() {
