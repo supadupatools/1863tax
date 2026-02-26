@@ -22,7 +22,7 @@
         <form id="login-form" class="form-grid" novalidate>
           <label>Email <input name="email" type="email" required /></label>
           <label>Password <input name="password" type="password" required /></label>
-          <button id="login-btn" type="button">Sign In</button>
+          <button id="login-btn" type="submit">Sign In</button>
         </form>
         <p id="auth-state">Enter credentials to continue.</p>
         <div style="display:flex;gap:0.5rem;align-items:center;">
@@ -35,6 +35,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/admin/config.js?v=20260226f"></script>
-    <script src="/admin/login.js?v=20260226f"></script>
+    <script type="module" src="/admin/login.js?v=20260226g"></script>
   </body>
 </html>
