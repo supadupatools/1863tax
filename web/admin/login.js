@@ -1,5 +1,6 @@
 const loginForm = document.getElementById("login-form");
 const loginBtn = document.getElementById("login-btn");
+const logoutCurrentBtn = document.getElementById("logout-current-btn");
 const authState = document.getElementById("auth-state");
 const schema = window.ARCHIVE_SCHEMA || "archive1863";
 const reason = new URLSearchParams(window.location.search).get("reason");
@@ -20,11 +21,27 @@ if (localStorage.getItem("archive_admin_token")) {
   window.location.replace("/admin/");
 }
 
-loginForm.addEventListener("submit", (event) => {
+loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  await attemptLogin();
 });
 
 loginBtn.addEventListener("click", async () => {
+  await attemptLogin();
+});
+
+logoutCurrentBtn.addEventListener("click", async () => {
+  localStorage.removeItem("archive_admin_token");
+  localStorage.removeItem("archive_admin_user");
+  try {
+    await supabase?.auth?.signOut();
+  } catch (_error) {
+    // Ignore; local session is already cleared.
+  }
+  authState.textContent = "Local session cleared.";
+});
+
+async function attemptLogin() {
   const form = new FormData(loginForm);
   const payload = {
     email: form.get("email"),
@@ -74,13 +91,19 @@ loginBtn.addEventListener("click", async () => {
     );
 
     authState.textContent = "Login successful. Redirecting...";
-    window.location.assign("/admin/");
+    const target = "/admin/";
+    window.location.href = target;
+    setTimeout(() => {
+      if (window.location.pathname.includes("/admin/login")) {
+        window.location.replace(target);
+      }
+    }, 400);
   } catch (error) {
     authState.textContent =
       `Login failed: ${error.message}. ` +
       "Check Supabase config and user profile/role setup.";
   }
-});
+}
 
 if (!hasSupabaseJs) {
   authState.textContent =
