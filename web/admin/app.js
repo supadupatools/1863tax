@@ -308,6 +308,14 @@ function hydrateAuth() {
     return;
   }
 
+  const allowedRoles = new Set(["admin", "reviewer", "transcriber"]);
+  if (!state.user?.isActive || !allowedRoles.has(state.user?.role)) {
+    localStorage.removeItem("archive_admin_token");
+    localStorage.removeItem("archive_admin_user");
+    window.location.replace("/admin/login?reason=role");
+    return;
+  }
+
   appPanel.classList.remove("hidden");
   userMeta.textContent = `Role: ${state.user?.role || "authenticated"}`;
   renderRoute();

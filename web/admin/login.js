@@ -5,6 +5,11 @@ const supabase = window.supabase.createClient(
   window.SUPABASE_PUBLISHABLE_KEY
 );
 const schema = window.ARCHIVE_SCHEMA || "archive1863";
+const reason = new URLSearchParams(window.location.search).get("reason");
+
+if (reason === "role") {
+  authState.textContent = "Your account does not have an active admin/reviewer/transcriber profile.";
+}
 
 if (localStorage.getItem("archive_admin_token")) {
   window.location.replace("/admin/");
@@ -37,28 +42,17 @@ loginForm.addEventListener("submit", async (event) => {
       return;
     }
 
-    const { data: profile, error: profileError } = await supabase
-      .schema(schema)
-      .from("user_profiles")
-      .select("auth_user_id, role, display_name, is_active, email")
-      .eq("auth_user_id", authUser.id)
-      .maybeSingle();
-
-    if (profileError) {
-      authState.textContent = `Login failed: ${profileError.message}`;
-      return;
-    }
-
-    if (!profile?.is_active) {
-      authState.textContent = "Login failed: account is disabled or missing profile.";
-      await supabase.auth.signOut();
-      return;
-    }
-
-    if (!["admin", "reviewer", "transcriber"].includes(profile.role)) {
-      authState.textContent = "Login failed: insufficient admin role.";
-      await supabase.auth.signOut();
-      return;
+    let profile = null;
+    try {
+      const profileResult = await supabase
+        .schema(schema)
+        .from("user_profiles")
+        .select("auth_user_id, role, display_name, is_active, email")
+        .eq("auth_user_id", authUser.id)
+        .maybeSingle();
+      if (!profileResult.error) profile = profileResult.data || null;
+    } catch (_profileError) {
+      profile = null;
     }
 
     localStorage.setItem("archive_admin_token", accessToken);
@@ -66,12 +60,15 @@ loginForm.addEventListener("submit", async (event) => {
       "archive_admin_user",
       JSON.stringify({
         id: authUser.id,
-        email: profile.email || authUser.email,
-        role: profile.role,
-        displayName: profile.display_name || authUser.email
+        email: profile?.email || authUser.email,
+        role: profile?.role || "public",
+        displayName: profile?.display_name || authUser.email,
+        isActive: profile?.is_active ?? true
       })
     );
-    window.location.replace("/admin/");
+
+    authState.textContent = "Login successful. Redirecting...";
+    window.location.assign("/admin/");
   } catch (error) {
     authState.textContent =
       `Login failed: ${error.message}. ` +
