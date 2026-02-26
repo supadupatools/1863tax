@@ -16,10 +16,13 @@ const modalConfirm = document.getElementById("modal-confirm");
 const adminSearch = document.getElementById("admin-search");
 const envBadge = document.getElementById("env-badge");
 const schema = window.ARCHIVE_SCHEMA || "archive1863";
-const supabaseClient = window.supabase.createClient(
-  window.SUPABASE_URL,
-  window.SUPABASE_PUBLISHABLE_KEY
-);
+const hasSupabaseJs = Boolean(window.supabase?.createClient);
+const supabaseClient = hasSupabaseJs
+  ? window.supabase.createClient(
+    window.SUPABASE_URL,
+    window.SUPABASE_PUBLISHABLE_KEY
+  )
+  : null;
 
 const state = {
   token: localStorage.getItem("archive_admin_token") || null,
@@ -303,6 +306,14 @@ function handleLogout() {
 }
 
 function hydrateAuth() {
+  if (!hasSupabaseJs) {
+    appPanel.classList.remove("hidden");
+    pageHeader.innerHTML = "<h2>Admin Runtime Error</h2><p>Supabase JS SDK failed to load.</p>";
+    pageContent.innerHTML =
+      "<p>Cannot load admin app because Supabase SDK is unavailable. Check CDN/network and redeploy cache-busted assets.</p>";
+    return;
+  }
+
   if (!state.token) {
     window.location.replace("/admin/login");
     return;
