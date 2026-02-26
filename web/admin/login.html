@@ -19,10 +19,10 @@
       <section class="login-card">
         <h1>Admin Sign In</h1>
         <p>1863 NC Tax Assessment Archive</p>
-        <form id="login-form" class="form-grid">
+        <form id="login-form" class="form-grid" method="post" action="/admin/login" novalidate>
           <label>Email <input name="email" type="email" required /></label>
           <label>Password <input name="password" type="password" required /></label>
-          <button type="submit">Sign In</button>
+          <button id="login-btn" type="button">Sign In</button>
         </form>
         <p id="auth-state">Enter credentials to continue.</p>
         <p style="font-size:0.8rem;color:#718096;">Build: admin-login-20260226b</p>

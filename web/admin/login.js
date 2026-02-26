@@ -1,4 +1,5 @@
 const loginForm = document.getElementById("login-form");
+const loginBtn = document.getElementById("login-btn");
 const authState = document.getElementById("auth-state");
 const schema = window.ARCHIVE_SCHEMA || "archive1863";
 const reason = new URLSearchParams(window.location.search).get("reason");
@@ -9,6 +10,7 @@ const supabase = hasSupabaseJs
     window.SUPABASE_PUBLISHABLE_KEY
   )
   : null;
+window.__adminLoginReady = true;
 
 if (reason === "role") {
   authState.textContent = "Your account does not have an active admin/reviewer/transcriber profile.";
@@ -18,8 +20,11 @@ if (localStorage.getItem("archive_admin_token")) {
   window.location.replace("/admin/");
 }
 
-loginForm.addEventListener("submit", async (event) => {
+loginForm.addEventListener("submit", (event) => {
   event.preventDefault();
+});
+
+loginBtn.addEventListener("click", async () => {
   const form = new FormData(loginForm);
   const payload = {
     email: form.get("email"),
