@@ -7,178 +7,183 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Anton&family=Cormorant+Garamond:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cormorant+Garamond:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.v2.css?v=3" />
+    <link rel="stylesheet" href="./styles.v2.css?v=5" />
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to main content</a>
 
-    <main id="main-content" class="site-canvas" role="main">
+    <div class="page">
+      <main id="main-content" class="frame" role="main">
+        <header class="top-strip" aria-label="Site navigation bar">
+          <span class="strip-icon" aria-hidden="true">⌘</span>
+          <img src="./src/public/images/rr-logo-cropped.png" alt="1863 archive mark" class="strip-logo" />
+          <span class="strip-icon" aria-hidden="true">☷</span>
+        </header>
+        <div class="rule"></div>
 
-      <section class="poster" aria-label="Archival introduction">
-        <article class="microcopy microcopy-top-left">
-          <p>
-            The 1863 tax assessment is critical because enslaved people were
-            often assessed as taxable property and, in some counties, recorded
-            by name in ways missing from other records.
-          </p>
-          <p>
-            For Black American researchers, those entries can be one of the few
-            direct paper trails connecting individuals, households, enslavers,
-            and place before emancipation.
-          </p>
-        </article>
+        <section class="hero" aria-label="Archival introduction">
+          <h1 class="heroTitle">1863 TAX<br />ASSESSMENT</h1>
 
-        <figure class="photo-card card-top-left">
-          <img
-            src="./src/public/images/C.016.94101_0051 copy.jpeg"
-            alt="Archival street scene detail"
-            class="crop crop-a"
-          />
-        </figure>
+          <div class="heroGallery" aria-hidden="true">
+            <figure class="clipping clipA">
+              <img
+                src="./src/public/images/C.016.94101_0051 copy.jpeg"
+                alt=""
+                class="crop crop-a"
+              />
+            </figure>
 
-        <figure class="photo-card card-top-right">
-          <img
-            src="./src/public/images/8c35333u1.jpg"
-            alt="Archival city transport detail"
-            class="crop crop-b"
-          />
-        </figure>
+            <figure class="clipping clipB">
+              <img
+                src="./src/public/images/8c35333u1.jpg"
+                alt=""
+                class="crop crop-b"
+              />
+            </figure>
 
-        <h1 class="poster-title">1863 TAX ASSESSMENT</h1>
+            <figure class="clipping clipC">
+              <img
+                src="./src/public/images/8b35942u.jpg"
+                alt=""
+                class="crop crop-c"
+              />
+            </figure>
 
-        <figure class="photo-card card-bottom-mid">
-          <img
-            src="./src/public/images/8b35942u.jpg"
-            alt="Archival field detail"
-            class="crop crop-c"
-          />
-        </figure>
+            <figure class="clipping clipD">
+              <img
+                src="./src/public/images/Julia.jpg"
+                alt=""
+                class="crop crop-d"
+              />
+            </figure>
+          </div>
 
-        <article class="microcopy microcopy-bottom-mid">
-          <p>
-            Surviving 1863 tax rolls in North Carolina are limited, with only
-            a small set of counties, roughly seven to eight, known to retain
-            usable records.
-          </p>
-          <p>
-            That scarcity makes every named entry high-impact evidence for
-            reconstructing Black family lines, migration, kinship ties, and
-            community history.
-          </p>
-        </article>
-
-        <figure class="photo-card card-bottom-right">
-          <img
-            src="./src/public/images/Julia.jpg"
-            alt="Archival registry desk detail"
-            class="crop crop-d"
-          />
-        </figure>
-      </section>
-
-      <section class="search-band" aria-label="Search controls">
-        <div class="era-tag">1860-1902</div>
-        <section class="search-panel" aria-labelledby="search-heading">
-          <h2 id="search-heading">Find A Record</h2>
-          <form id="search-form" class="search-form">
-            <label for="name-input">Ancestor Name</label>
-            <input
-              id="name-input"
-              name="name"
-              type="search"
-              placeholder="e.g., Mary Whitfield"
-              autocomplete="off"
-              required
-            />
-
-            <label for="county-select">County</label>
-            <select id="county-select" name="county" required>
-              <option value="">Select County</option>
-              <option value="Jefferson">Jefferson</option>
-              <option value="Franklin">Franklin</option>
-              <option value="Madison">Madison</option>
-              <option value="Montgomery">Montgomery</option>
-              <option value="Shelby">Shelby</option>
-            </select>
-
-            <button type="submit">Search</button>
-          </form>
+          <div class="metaVertical">NC • 1863</div>
         </section>
-        <div class="era-tag align-right">1863 public archive index</div>
-      </section>
 
-      <section class="results-paper" aria-labelledby="results-heading">
-        <div class="results-top">
-          <h2 id="results-heading">Search Results</h2>
-          <p id="result-summary" class="result-summary" aria-live="polite">
-            No search performed yet.
-          </p>
-          <div class="view-toggle" role="tablist" aria-label="Result view mode">
-            <button
-              id="panel-view-btn"
-              type="button"
-              class="toggle-btn active"
-              role="tab"
-              aria-selected="true"
-              aria-controls="panel-view"
-            >
-              Panel View
-            </button>
-            <button
-              id="table-view-btn"
-              type="button"
-              class="toggle-btn"
-              role="tab"
-              aria-selected="false"
-              aria-controls="table-view"
-            >
-              Table View
-            </button>
-          </div>
-        </div>
+        <div class="rule"></div>
 
-        <div id="empty-state" class="empty-state">
-          Enter a name and county to explore available 1863 records.
-        </div>
-
-        <div id="panel-view" class="panel-view" role="tabpanel">
-          <aside class="record-list-wrapper" aria-label="Matching records">
-            <ul id="record-list" class="record-list"></ul>
-          </aside>
-          <article id="record-detail" class="record-detail" aria-live="polite">
-            <h3>Record Detail</h3>
-            <p>Select a result to view details.</p>
+        <section class="infoGrid" aria-label="Archive context">
+          <article class="infoCard">
+            <p>
+              The 1863 tax assessment is critical because enslaved people were often assessed as taxable
+              property and, in some counties, recorded by name in ways missing from other records.
+            </p>
+            <button type="button" class="quietBtn">Learn More</button>
           </article>
-        </div>
+          <article class="infoCard">
+            <p>
+              Surviving North Carolina rolls are scarce. That scarcity makes each named entry high-impact
+              evidence for reconstructing Black family lines, migration, and community history.
+            </p>
+            <button type="button" class="quietBtn">Explore Sources</button>
+          </article>
+        </section>
 
-        <div id="table-view" class="table-view hidden" role="tabpanel">
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th scope="col">Name</th>
-                  <th scope="col">County</th>
-                  <th scope="col">Record Type</th>
-                  <th scope="col">Date</th>
-                  <th scope="col">Reference</th>
-                </tr>
-              </thead>
-              <tbody id="results-table-body"></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-    </main>
+        <div class="rule"></div>
 
-    <footer class="page-footer" role="contentinfo">
-      <p>
-        Source transparency: Records shown are examples. Connect Supabase to
-        replace mock data.
-      </p>
-    </footer>
+        <section class="panel" aria-label="Record catalog panel">
+          <section class="search-panel" aria-labelledby="search-heading">
+            <h2 id="search-heading">Find A Record</h2>
+            <form id="search-form" class="search-form">
+              <label for="name-input">Ancestor Name</label>
+              <input
+                id="name-input"
+                name="name"
+                type="search"
+                placeholder="e.g., Mary Whitfield"
+                autocomplete="off"
+                required
+              />
+
+              <label for="county-select">County</label>
+              <select id="county-select" name="county" required>
+                <option value="">Select County</option>
+                <option value="Jefferson">Jefferson</option>
+                <option value="Franklin">Franklin</option>
+                <option value="Madison">Madison</option>
+                <option value="Montgomery">Montgomery</option>
+                <option value="Shelby">Shelby</option>
+              </select>
+
+              <button type="submit">Search</button>
+            </form>
+          </section>
+
+          <section class="results-paper" aria-labelledby="results-heading">
+            <div class="results-top">
+              <h2 id="results-heading">Search Results</h2>
+              <p id="result-summary" class="result-summary" aria-live="polite">
+                No search performed yet.
+              </p>
+              <div class="view-toggle" role="tablist" aria-label="Result view mode">
+                <button
+                  id="panel-view-btn"
+                  type="button"
+                  class="toggle-btn active"
+                  role="tab"
+                  aria-selected="true"
+                  aria-controls="panel-view"
+                >
+                  Panel View
+                </button>
+                <button
+                  id="table-view-btn"
+                  type="button"
+                  class="toggle-btn"
+                  role="tab"
+                  aria-selected="false"
+                  aria-controls="table-view"
+                >
+                  Table View
+                </button>
+              </div>
+            </div>
+
+            <div id="empty-state" class="empty-state">
+              Enter a name and county to explore available 1863 records.
+            </div>
+
+            <div id="panel-view" class="panel-view" role="tabpanel">
+              <aside class="record-list-wrapper" aria-label="Matching records">
+                <ul id="record-list" class="record-list"></ul>
+              </aside>
+              <article id="record-detail" class="record-detail" aria-live="polite">
+                <h3>Record Detail</h3>
+                <p>Select a result to view details.</p>
+              </article>
+            </div>
+
+            <div id="table-view" class="table-view hidden" role="tabpanel">
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th scope="col">Name</th>
+                      <th scope="col">County</th>
+                      <th scope="col">Record Type</th>
+                      <th scope="col">Date</th>
+                      <th scope="col">Reference</th>
+                    </tr>
+                  </thead>
+                  <tbody id="results-table-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <div class="rule"></div>
+
+        <footer class="footer" role="contentinfo">
+          <p>1863 • North Carolina • 7 Counties</p>
+          <p>1863 Tax Assessment Archive</p>
+        </footer>
+      </main>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./app.js"></script>
