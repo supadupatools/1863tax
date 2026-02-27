@@ -20,7 +20,22 @@
         <header class="top-strip" aria-label="Site navigation bar">
           <span class="strip-icon" aria-hidden="true">⌘</span>
           <img src="./src/public/images/rr-logo-cropped.png" alt="1863 archive mark" class="strip-logo" />
-          <span class="strip-icon" aria-hidden="true">☷</span>
+          <div class="menuWrap">
+            <button
+              id="menu-toggle"
+              class="menuToggle"
+              type="button"
+              aria-label="Open site menu"
+              aria-expanded="false"
+              aria-controls="site-menu"
+            >
+              ☷
+            </button>
+            <nav id="site-menu" class="siteMenu hidden" aria-label="Site menu">
+              <a href="/search/">Search Archive</a>
+              <a href="/login">Admin Login</a>
+            </nav>
+          </div>
         </header>
         <div class="rule"></div>
 
@@ -79,7 +94,7 @@
               Surviving North Carolina rolls are scarce. That scarcity makes each named entry high-impact
               evidence for reconstructing Black family lines, migration, and community history.
             </p>
-            <a class="quietBtn" href="./web/public/">Explore Sources</a>
+            <a class="quietBtn" href="/search/">Explore Sources</a>
           </article>
         </section>
 
@@ -91,5 +106,23 @@
         </footer>
       </main>
     </div>
+    <script>
+      const menuToggle = document.getElementById("menu-toggle");
+      const siteMenu = document.getElementById("site-menu");
+
+      menuToggle?.addEventListener("click", () => {
+        const expanded = menuToggle.getAttribute("aria-expanded") === "true";
+        menuToggle.setAttribute("aria-expanded", String(!expanded));
+        siteMenu?.classList.toggle("hidden", expanded);
+      });
+
+      document.addEventListener("click", (event) => {
+        const target = event.target;
+        if (!target || !(target instanceof Element)) return;
+        if (target.closest(".menuWrap")) return;
+        menuToggle?.setAttribute("aria-expanded", "false");
+        siteMenu?.classList.add("hidden");
+      });
+    </script>
   </body>
 </html>

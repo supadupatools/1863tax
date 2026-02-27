@@ -312,7 +312,7 @@ function handleLogout() {
   localStorage.removeItem("archive_admin_token");
   localStorage.removeItem("archive_admin_user");
   supabaseClient.auth.signOut().catch(() => {});
-  window.location.replace("/admin/login");
+  window.location.replace("/login");
 }
 
 async function hydrateAuth() {
@@ -325,7 +325,7 @@ async function hydrateAuth() {
   }
 
   if (!state.token) {
-    window.location.replace("/admin/login");
+    window.location.replace("/login");
     return;
   }
 
@@ -335,7 +335,7 @@ async function hydrateAuth() {
   if (!state.user?.isActive || !allowedRoles.has(state.user?.role)) {
     localStorage.removeItem("archive_admin_token");
     localStorage.removeItem("archive_admin_user");
-    window.location.replace("/admin/login?reason=role");
+    window.location.replace("/login?reason=role");
     return;
   }
 
@@ -402,16 +402,43 @@ async function renderRoute() {
 }
 
 async function renderDashboard() {
-  const [stats, drafts, queue] = await Promise.all([
+  const [statsResult, draftsResult, queueResult] = await Promise.allSettled([
     apiJson("/api/admin/dashboard/stats"),
     apiJson("/api/admin/my-drafts"),
     apiJson("/api/admin/transcription-queue")
   ]);
 
+  const stats = statsResult.status === "fulfilled"
+    ? statsResult.value
+    : {
+      pages_scanned: 0,
+      entries_draft: 0,
+      awaiting_review: 0,
+      approved_public: 0,
+      alerts: {
+        missing_district_mapping: 0,
+        pages_without_thumbnails: 0,
+        sources_missing_citations: 0
+      }
+    };
+  const drafts = draftsResult.status === "fulfilled" ? draftsResult.value : [];
+  const queue = queueResult.status === "fulfilled" ? queueResult.value : [];
+
   const recentDrafts = drafts.slice(0, 8);
   const queueItems = queue.slice(0, 8);
+  const dashboardErrors = [];
+  if (statsResult.status === "rejected") dashboardErrors.push(`stats: ${statsResult.reason?.message || String(statsResult.reason)}`);
+  if (draftsResult.status === "rejected") dashboardErrors.push(`my-drafts: ${draftsResult.reason?.message || String(draftsResult.reason)}`);
+  if (queueResult.status === "rejected") dashboardErrors.push(`transcription-queue: ${queueResult.reason?.message || String(queueResult.reason)}`);
 
   pageContent.innerHTML = `
+    ${dashboardErrors.length ? `
+      <article class="card" style="border-color:#b88f8f;background:#fff7f7;">
+        <h3>Dashboard Partial Load</h3>
+        <p>Some dashboard queries failed:</p>
+        <ul>${dashboardErrors.map((msg) => `<li>${escapeHtml(msg)}</li>`).join("")}</ul>
+      </article>
+    ` : ""}
     <div class="stat-grid">
       <article class="stat-card"><h3>Pages scanned</h3><p>${stats.pages_scanned}</p></article>
       <article class="stat-card"><h3>Entries created (draft)</h3><p>${stats.entries_draft}</p></article>
@@ -1491,7 +1518,7 @@ async function queryDashboardStats() {
 }
 
 async function countRows(table, filters = null) {
-  let q = supabaseClient.schema(schema).from(table).select("id", { count: "exact", head: true });
+  let q = supabaseClient.schema(schema).from(table).select("*", { count: "exact", head: true });
   if (filters) {
     for (const [k, v] of Object.entries(filters)) {
       if (v === null) q = q.is(k, null);
@@ -1499,7 +1526,16 @@ async function countRows(table, filters = null) {
     }
   }
   const { count, error } = await q;
-  if (error) throw new Error(error.message);
+  if (error) {
+    const parts = [
+      `table=${table}`,
+      `message=${error.message || "unknown"}`
+    ];
+    if (error.code) parts.push(`code=${error.code}`);
+    if (error.details) parts.push(`details=${error.details}`);
+    if (error.hint) parts.push(`hint=${error.hint}`);
+    throw new Error(parts.join(" | "));
+  }
   return count || 0;
 }
 
@@ -1514,7 +1550,7 @@ async function queryMyDrafts() {
   return data || [];
 }
 
-async function queryTranscriptionQueue(params) {
+async function queryTranscriptionQueue(params = new URLSearchParams()) {
   let q = supabaseClient
     .schema(schema)
     .from("v_transcription_queue")

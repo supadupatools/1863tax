@@ -16,6 +16,8 @@ const __dirname = path.dirname(__filename);
 
 const publicWebDir = path.resolve(__dirname, env.publicWebDir);
 const adminWebDir = path.resolve(__dirname, env.adminWebDir);
+const landingRootDir = path.resolve(__dirname, "../..");
+const landingImagesDir = path.resolve(landingRootDir, "src/public/images");
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
@@ -36,16 +38,34 @@ app.use("/api/admin", requireRole(["admin"]), adminRouter);
 app.use("/api/transcriptions", requireRole(["admin", "transcriber"]), transcriptionRouter);
 app.use("/api/review", requireRole(["admin", "reviewer"]), reviewRouter);
 
-app.get("/admin/login", (_req, res) => {
+app.get("/", (_req, res) => {
+  res.sendFile(path.join(landingRootDir, "index.html"));
+});
+
+app.get("/styles.v2.css", (_req, res) => {
+  res.sendFile(path.join(landingRootDir, "styles.v2.css"));
+});
+
+app.use("/src/public/images", express.static(landingImagesDir));
+
+app.get("/login", (_req, res) => {
   res.sendFile(path.join(adminWebDir, "login.html"));
+});
+
+app.get("/admin/login", (_req, res) => {
+  res.redirect(302, "/login");
 });
 
 app.get("/admin", (_req, res) => {
   res.sendFile(path.join(adminWebDir, "index.html"));
 });
 
+app.get("/search", (_req, res) => {
+  res.redirect(302, "/search/");
+});
+
 app.use("/admin", express.static(adminWebDir));
-app.use("/", express.static(publicWebDir));
+app.use("/search", express.static(publicWebDir));
 
 app.use((err, _req, res, _next) => {
   console.error(err);

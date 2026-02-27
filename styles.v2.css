@@ -51,6 +51,46 @@ body {
   align-items: center;
 }
 
+.menuWrap {
+  position: relative;
+  justify-self: center;
+}
+
+.menuToggle {
+  border: 0;
+  background: transparent;
+  font-size: 16px;
+  color: #66615d;
+  cursor: pointer;
+  padding: 0;
+}
+
+.siteMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 170px;
+  border: 1px solid var(--line);
+  background: #f7f6f4;
+  display: grid;
+  z-index: 20;
+}
+
+.siteMenu a {
+  color: var(--ink);
+  text-decoration: none;
+  padding: 0.5rem 0.65rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.siteMenu a:last-child {
+  border-bottom: 0;
+}
+
+.hidden {
+  display: none;
+}
+
 .strip-icon {
   font-size: 16px;
   color: #66615d;
