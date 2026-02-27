@@ -5,6 +5,22 @@
       "destination": "/api/:path*"
     },
     {
+      "source": "/styles.v2.css",
+      "destination": "/styles.v2.css"
+    },
+    {
+      "source": "/src/public/images/:path*",
+      "destination": "/src/public/images/:path*"
+    },
+    {
+      "source": "/login",
+      "destination": "/web/admin/login.html"
+    },
+    {
+      "source": "/login/",
+      "destination": "/web/admin/login.html"
+    },
+    {
       "source": "/admin",
       "destination": "/web/admin/index.html"
     },
@@ -26,7 +42,19 @@
     },
     {
       "source": "/",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/search",
       "destination": "/web/public/index.html"
+    },
+    {
+      "source": "/search/",
+      "destination": "/web/public/index.html"
+    },
+    {
+      "source": "/search/:path*",
+      "destination": "/web/public/:path*"
     },
     {
       "source": "/:path*",
