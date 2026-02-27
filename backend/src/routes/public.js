@@ -1,8 +1,35 @@
 import express from "express";
 import { asyncHandler, parseIntOrNull } from "../utils/http.js";
+import { query } from "../config/db.js";
 import { getPublicEntryDetail, searchPublicEntries } from "../services/searchService.js";
 
 export const publicRouter = express.Router();
+
+publicRouter.get(
+  "/filters",
+  asyncHandler(async (req, res) => {
+    const countyId = parseIntOrNull(req.query.county_id);
+
+    const countiesResult = await query(
+      "SELECT id, name FROM counties WHERE enabled = TRUE ORDER BY name ASC"
+    );
+    const districtsResult = await query(
+      `
+        SELECT id, county_id, name
+        FROM districts
+        WHERE enabled = TRUE
+          AND ($1::BIGINT IS NULL OR county_id = $1)
+        ORDER BY name ASC
+      `,
+      [countyId]
+    );
+
+    return res.json({
+      counties: countiesResult.rows,
+      districts: districtsResult.rows
+    });
+  })
+);
 
 publicRouter.get(
   "/search",

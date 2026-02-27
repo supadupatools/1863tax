@@ -75,7 +75,7 @@ body {
 .hero {
   position: relative;
   min-height: 560px;
-  padding: 54px 0 36px;
+  padding: 65px 0 36px;
   overflow: hidden;
 }
 
@@ -85,7 +85,7 @@ body {
   z-index: 3;
   width: min(52%, 640px);
   font-family: var(--font-condensed);
-  font-size: clamp(92px, 11vw, 190px);
+  font-size: clamp(101px, 12vw, 209px);
   line-height: 0.84;
   letter-spacing: -0.02em;
   font-weight: 800;
@@ -203,6 +203,7 @@ body {
 }
 
 .quietBtn {
+  display: inline-block;
   margin-top: 24px;
   border: 1px solid #a7a19d;
   border-radius: 999px;
@@ -211,6 +212,7 @@ body {
   font-family: var(--font-serif);
   font-size: 17px;
   color: #4a4542;
+  text-decoration: none;
 }
 
 .panel {
@@ -442,7 +444,7 @@ tbody tr:hover {
 
   .heroTitle {
     width: min(60%, 520px);
-    font-size: clamp(76px, 10vw, 140px);
+    font-size: clamp(84px, 11vw, 154px);
   }
 
   .clipA,
@@ -470,13 +472,13 @@ tbody tr:hover {
     min-height: auto;
     display: grid;
     gap: 1rem;
-    padding: 30px 0;
+    padding: 36px 0;
   }
 
   .heroTitle {
     width: 100%;
     position: static;
-    font-size: clamp(70px, 20vw, 110px);
+    font-size: clamp(77px, 22vw, 121px);
     text-align: left;
   }
 

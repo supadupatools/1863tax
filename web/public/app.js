@@ -1,13 +1,20 @@
 const searchForm = document.getElementById("search-form");
+const countySelect = document.getElementById("county_id");
+const districtSelect = document.getElementById("district_id");
+const filtersNote = document.getElementById("filters-note");
 const resultsBody = document.getElementById("results-body");
 const summary = document.getElementById("summary");
 const detail = document.getElementById("detail");
-const supabase = window.supabase.createClient(
-  window.SUPABASE_URL,
-  window.SUPABASE_PUBLISHABLE_KEY
-);
+const supabaseClient = createSupabaseClient();
 
 let currentRows = [];
+
+init();
+
+countySelect.addEventListener("change", async () => {
+  const countyId = countySelect.value || null;
+  await loadDistricts(countyId);
+});
 
 searchForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -15,7 +22,9 @@ searchForm.addEventListener("submit", async (event) => {
   const params = new URLSearchParams();
 
   for (const [key, value] of form.entries()) {
-    if (value !== "") params.set(key, value);
+    if (value !== "") {
+      params.set(key, value);
+    }
   }
 
   summary.textContent = "Searching...";
@@ -24,6 +33,107 @@ searchForm.addEventListener("submit", async (event) => {
   summary.textContent = `${payload.length} records found`;
   renderRows();
 });
+
+async function init() {
+  try {
+    await loadCounties();
+    await loadDistricts(null);
+    filtersNote.textContent = "County and district filters loaded from database.";
+  } catch (_error) {
+    filtersNote.textContent = "Could not load county/district lists. You can still search by name.";
+  }
+}
+
+async function loadCounties() {
+  const payload = await fetchFilters();
+  const counties = payload?.counties || [];
+
+  countySelect.innerHTML = '<option value="">All Counties</option>';
+  counties.forEach((county) => {
+    const option = document.createElement("option");
+    option.value = String(county.id);
+    option.textContent = county.name;
+    countySelect.appendChild(option);
+  });
+}
+
+async function loadDistricts(countyId) {
+  const payload = await fetchFilters(countyId);
+  const districts = payload?.districts || [];
+
+  districtSelect.innerHTML = '<option value="">All Districts</option>';
+  districts.forEach((district) => {
+    const option = document.createElement("option");
+    option.value = String(district.id);
+    option.textContent = district.name;
+    districtSelect.appendChild(option);
+  });
+
+  districtSelect.disabled = districts.length === 0;
+}
+
+async function fetchFilters(countyId = null) {
+  const apiPayload = await fetchFiltersFromApi(countyId);
+  if (apiPayload) {
+    return apiPayload;
+  }
+
+  const dbPayload = await fetchFiltersFromSupabase(countyId);
+  if (dbPayload) {
+    return dbPayload;
+  }
+
+  throw new Error("filters_fetch_failed");
+}
+
+async function fetchFiltersFromApi(countyId = null) {
+  try {
+    const params = new URLSearchParams();
+    if (countyId) {
+      params.set("county_id", countyId);
+    }
+    const url = `/api/public/filters${params.toString() ? `?${params.toString()}` : ""}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      return null;
+    }
+    return response.json();
+  } catch (_error) {
+    return null;
+  }
+}
+
+async function fetchFiltersFromSupabase(countyId = null) {
+  if (!supabaseClient) {
+    return null;
+  }
+
+  const countiesQuery = supabaseClient.schema("archive1863").from("counties").select("id,name").eq("enabled", true).order("name", { ascending: true });
+  const districtsQuery = supabaseClient
+    .schema("archive1863")
+    .from("districts")
+    .select("id,county_id,name")
+    .eq("enabled", true)
+    .order("name", { ascending: true });
+
+  if (countyId) {
+    districtsQuery.eq("county_id", Number(countyId));
+  }
+
+  const [{ data: counties, error: countiesError }, { data: districts, error: districtsError }] = await Promise.all([
+    countiesQuery,
+    districtsQuery
+  ]);
+
+  if (countiesError || districtsError) {
+    return null;
+  }
+
+  return {
+    counties: counties || [],
+    districts: districts || []
+  };
+}
 
 function renderRows() {
   resultsBody.innerHTML = "";
@@ -49,13 +159,15 @@ function renderRows() {
 async function loadDetail(entryId) {
   const entry = await getEntryDetail(entryId);
   if (!entry) {
-    detail.innerHTML = `<p>Failed to load detail.</p>`;
+    detail.innerHTML = "<p>Failed to load detail.</p>";
     return;
   }
+
   const sequence = Number(entry.sequence_on_page || 0);
   const line = String(entry.line_number || "").trim();
   const estimatedTop = Math.max(5, Math.min(95, sequence > 0 ? sequence * 3 : 50));
   const showHighlight = Boolean(sequence > 0 || line);
+
   detail.innerHTML = `
     <h3>${escapeHtml(entry.enslaved_name_original || "Unknown")}</h3>
     <p><strong>Normalized:</strong> ${escapeHtml(entry.enslaved_name_normalized || "")}</p>
@@ -78,14 +190,58 @@ async function loadDetail(entryId) {
       <p><strong>Source Item:</strong> ${escapeHtml(entry.source_item_label || "")}</p>
       <p><strong>Page:</strong> ${escapeHtml(entry.page_number_label || "")}</p>
       ${entry.citation_preferred ? `<p><strong>Preferred Citation:</strong> ${escapeHtml(entry.citation_preferred)}</p>` : ""}
-      ${showHighlight ? `<p><strong>Entry Highlight:</strong> Approximate row marker shown from line/sequence metadata.</p>` : ""}
+      ${showHighlight ? "<p><strong>Entry Highlight:</strong> Approximate row marker shown from line/sequence metadata.</p>" : ""}
       ${entry.image_thumbnail_url ? `<p><a href="${escapeHtml(entry.image_url)}" target="_blank" rel="noopener">Open scan image</a></p>` : ""}
     </div>
   `;
 }
 
 async function searchEntries(params) {
-  const { data, error } = await supabase.rpc("public_search_entries", {
+  const apiPayload = await searchEntriesFromApi(params);
+  if (apiPayload) {
+    return apiPayload.entries || [];
+  }
+
+  const dbPayload = await searchEntriesFromSupabase(params);
+  if (dbPayload) {
+    return dbPayload;
+  }
+
+  summary.textContent = "Search failed";
+  return [];
+}
+
+async function getEntryDetail(entryId) {
+  const apiPayload = await getEntryDetailFromApi(entryId);
+  if (apiPayload) {
+    return apiPayload.entry || null;
+  }
+
+  return getEntryDetailFromSupabase(entryId);
+}
+
+async function searchEntriesFromApi(params) {
+  try {
+    const response = await fetch(`/api/public/search?${params.toString()}`);
+    if (!response.ok) {
+      const errorPayload = await safeJson(response);
+      if (errorPayload?.error === "name_required") {
+        summary.textContent = "Name is required";
+      }
+      return null;
+    }
+    return response.json();
+  } catch (_error) {
+    return null;
+  }
+}
+
+async function searchEntriesFromSupabase(params) {
+  if (!supabaseClient) {
+    return null;
+  }
+
+  const { data, error } = await supabaseClient.rpc("public_search_entries", {
     p_name: params.get("name"),
     p_county_id: params.get("county_id") || null,
     p_district_id: params.get("district_id") || null,
@@ -95,19 +251,46 @@ async function searchEntries(params) {
     p_limit: 100,
     p_offset: 0
   });
+
   if (error) {
-    summary.textContent = error.message || "Search failed";
-    return [];
+    return null;
   }
   return data || [];
 }
 
-async function getEntryDetail(entryId) {
-  const { data, error } = await supabase.rpc("public_get_entry_detail", {
+async function getEntryDetailFromApi(entryId) {
+  try {
+    const response = await fetch(`/api/public/entries/${Number(entryId)}`);
+    if (!response.ok) {
+      return null;
+    }
+    return response.json();
+  } catch (_error) {
+    return null;
+  }
+}
+
+async function getEntryDetailFromSupabase(entryId) {
+  if (!supabaseClient) {
+    return null;
+  }
+
+  const { data, error } = await supabaseClient.rpc("public_get_entry_detail", {
     p_entry_id: Number(entryId)
   });
-  if (error || !data?.length) return null;
+
+  if (error || !data?.length) {
+    return null;
+  }
   return data[0];
+}
+
+async function safeJson(response) {
+  try {
+    return await response.json();
+  } catch (_error) {
+    return null;
+  }
 }
 
 function escapeHtml(value) {
@@ -117,4 +300,14 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+function createSupabaseClient() {
+  if (!window.supabase?.createClient) {
+    return null;
+  }
+  if (!window.SUPABASE_URL || !window.SUPABASE_PUBLISHABLE_KEY) {
+    return null;
+  }
+  return window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_PUBLISHABLE_KEY);
 }

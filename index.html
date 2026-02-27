@@ -79,101 +79,8 @@
               Surviving North Carolina rolls are scarce. That scarcity makes each named entry high-impact
               evidence for reconstructing Black family lines, migration, and community history.
             </p>
-            <button type="button" class="quietBtn">Explore Sources</button>
+            <a class="quietBtn" href="./web/public/">Explore Sources</a>
           </article>
-        </section>
-
-        <div class="rule"></div>
-
-        <section class="panel" aria-label="Record catalog panel">
-          <section class="search-panel" aria-labelledby="search-heading">
-            <h2 id="search-heading">Find A Record</h2>
-            <form id="search-form" class="search-form">
-              <label for="name-input">Ancestor Name</label>
-              <input
-                id="name-input"
-                name="name"
-                type="search"
-                placeholder="e.g., Mary Whitfield"
-                autocomplete="off"
-                required
-              />
-
-              <label for="county-select">County</label>
-              <select id="county-select" name="county" required>
-                <option value="">Select County</option>
-                <option value="Jefferson">Jefferson</option>
-                <option value="Franklin">Franklin</option>
-                <option value="Madison">Madison</option>
-                <option value="Montgomery">Montgomery</option>
-                <option value="Shelby">Shelby</option>
-              </select>
-
-              <button type="submit">Search</button>
-            </form>
-          </section>
-
-          <section class="results-paper" aria-labelledby="results-heading">
-            <div class="results-top">
-              <h2 id="results-heading">Search Results</h2>
-              <p id="result-summary" class="result-summary" aria-live="polite">
-                No search performed yet.
-              </p>
-              <div class="view-toggle" role="tablist" aria-label="Result view mode">
-                <button
-                  id="panel-view-btn"
-                  type="button"
-                  class="toggle-btn active"
-                  role="tab"
-                  aria-selected="true"
-                  aria-controls="panel-view"
-                >
-                  Panel View
-                </button>
-                <button
-                  id="table-view-btn"
-                  type="button"
-                  class="toggle-btn"
-                  role="tab"
-                  aria-selected="false"
-                  aria-controls="table-view"
-                >
-                  Table View
-                </button>
-              </div>
-            </div>
-
-            <div id="empty-state" class="empty-state">
-              Enter a name and county to explore available 1863 records.
-            </div>
-
-            <div id="panel-view" class="panel-view" role="tabpanel">
-              <aside class="record-list-wrapper" aria-label="Matching records">
-                <ul id="record-list" class="record-list"></ul>
-              </aside>
-              <article id="record-detail" class="record-detail" aria-live="polite">
-                <h3>Record Detail</h3>
-                <p>Select a result to view details.</p>
-              </article>
-            </div>
-
-            <div id="table-view" class="table-view hidden" role="tabpanel">
-              <div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th scope="col">Name</th>
-                      <th scope="col">County</th>
-                      <th scope="col">Record Type</th>
-                      <th scope="col">Date</th>
-                      <th scope="col">Reference</th>
-                    </tr>
-                  </thead>
-                  <tbody id="results-table-body"></tbody>
-                </table>
-              </div>
-            </div>
-          </section>
         </section>
 
         <div class="rule"></div>
@@ -184,8 +91,5 @@
         </footer>
       </main>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="./app.js"></script>
   </body>
 </html>
