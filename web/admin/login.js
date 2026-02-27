@@ -65,14 +65,22 @@ async function handleSubmit(event) {
       return;
     }
 
-    const profile = hasSupabaseClient
+    const claimedProfile = await claimProfileIfNeeded({
+      hasSupabaseClient,
+      supabase,
+      sessionToken
+    });
+
+    const profile = claimedProfile || (hasSupabaseClient
       ? await queryProfileViaClient(authUser.id)
-      : await queryProfileViaRest(authUser.id, sessionToken);
+      : await queryProfileViaRest(authUser.id, sessionToken));
 
     const user = buildStoredUser(authUser, profile);
     if (!canAccessAdminPortal(user)) {
-      setAuthState("This account does not have admin portal access.");
-      await clearSession();
+      setAuthState(
+        `Access denied: role=${user?.role || "unknown"}, active=${String(user?.isActive)}, profile=${profile ? "found" : "missing"}`
+      );
+      await clearSession({ quiet: true });
       return;
     }
 
@@ -90,11 +98,13 @@ function setAuthState(message) {
   if (authState) authState.textContent = message;
 }
 
-async function clearSession() {
+async function clearSession({ quiet = false } = {}) {
   localStorage.removeItem("archive_admin_token");
   localStorage.removeItem("archive_admin_user");
   await supabase?.auth?.signOut().catch(() => {});
-  setAuthState("Local session cleared.");
+  if (!quiet) {
+    setAuthState("Local session cleared.");
+  }
 }
 
 async function signInWithClient(credentials) {
@@ -158,4 +168,34 @@ async function queryProfileViaRest(userId, accessToken) {
   if (!response.ok) return null;
   const rows = await response.json();
   return rows?.[0] || null;
+}
+
+async function claimProfileIfNeeded({ hasSupabaseClient, supabase, sessionToken }) {
+  try {
+    if (hasSupabaseClient && supabase) {
+      const { data, error } = await supabase.rpc("claim_user_profile");
+      if (error) {
+        return null;
+      }
+      return Array.isArray(data) ? (data[0] || null) : (data || null);
+    }
+
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/claim_user_profile`, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_KEY,
+        authorization: `Bearer ${sessionToken}`,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({})
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+    const payload = await response.json().catch(() => null);
+    return Array.isArray(payload) ? (payload[0] || null) : (payload || null);
+  } catch (_error) {
+    return null;
+  }
 }

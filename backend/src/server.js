@@ -36,6 +36,14 @@ app.use("/api/admin", requireRole(["admin"]), adminRouter);
 app.use("/api/transcriptions", requireRole(["admin", "transcriber"]), transcriptionRouter);
 app.use("/api/review", requireRole(["admin", "reviewer"]), reviewRouter);
 
+app.get("/admin/login", (_req, res) => {
+  res.sendFile(path.join(adminWebDir, "login.html"));
+});
+
+app.get("/admin", (_req, res) => {
+  res.sendFile(path.join(adminWebDir, "index.html"));
+});
+
 app.use("/admin", express.static(adminWebDir));
 app.use("/", express.static(publicWebDir));
 

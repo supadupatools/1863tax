@@ -9,6 +9,93 @@ import { writeAuditLog } from "../middleware/audit.js";
 export const transcriptionRouter = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
+async function getPageContext(client, pageId) {
+  const result = await client.query(
+    `
+    SELECT
+      p.id,
+      p.county_id,
+      p.district_id,
+      p.page_number_label,
+      p.image_url,
+      si.label AS source_item_label,
+      s.title AS source_title,
+      r.name AS repository_name,
+      r.location AS repository_location
+    FROM pages p
+    JOIN source_items si ON si.id = p.source_item_id
+    JOIN sources s ON s.id = si.source_id
+    JOIN repositories r ON r.id = s.repository_id
+    WHERE p.id = $1
+    LIMIT 1
+    `,
+    [pageId]
+  );
+
+  return result.rows[0] || null;
+}
+
+function requirePayloadFields(payload, requiredFields) {
+  const missing = requiredFields.filter((field) => {
+    const value = payload[field];
+    return value === undefined || value === null || String(value).trim() === "";
+  });
+  return missing;
+}
+
+async function validateAndResolveEntryPayload(client, payload) {
+  const pageId = Number(payload.page_id || 0);
+  if (!pageId) {
+    return { error: { error: "page_id_required" } };
+  }
+
+  const missing = requirePayloadFields(payload, [
+    "taxpayer_name_original",
+    "enslaved_name_original"
+  ]);
+  if (missing.length) {
+    return { error: { error: "missing_required_fields", missing } };
+  }
+
+  const page = await getPageContext(client, pageId);
+  if (!page) {
+    return { error: { error: "page_not_found", page_id: pageId } };
+  }
+
+  if (payload.county_id && Number(payload.county_id) !== Number(page.county_id)) {
+    return {
+      error: {
+        error: "county_mismatch_with_page",
+        page_county_id: Number(page.county_id)
+      }
+    };
+  }
+  if (
+    payload.district_id &&
+    page.district_id &&
+    Number(payload.district_id) !== Number(page.district_id)
+  ) {
+    return {
+      error: {
+        error: "district_mismatch_with_page",
+        page_district_id: Number(page.district_id)
+      }
+    };
+  }
+
+  return {
+    resolved: {
+      ...payload,
+      page_id: pageId,
+      county_id: payload.county_id ? Number(payload.county_id) : Number(page.county_id),
+      district_id: payload.district_id
+        ? Number(payload.district_id)
+        : (page.district_id ? Number(page.district_id) : null)
+    },
+    page
+  };
+}
+
 async function getOrCreateTaxpayer(client, payload) {
   if (payload.taxpayer_id) return payload.taxpayer_id;
 
@@ -82,8 +169,12 @@ transcriptionRouter.post(
     const payload = req.body || {};
 
     const created = await withTransaction(async (client) => {
-      const taxpayerId = await getOrCreateTaxpayer(client, payload);
-      const enslavedPersonId = await getOrCreateEnslavedPerson(client, payload);
+      const validated = await validateAndResolveEntryPayload(client, payload);
+      if (validated.error) return { error: validated.error };
+      const resolvedPayload = validated.resolved;
+
+      const taxpayerId = await getOrCreateTaxpayer(client, resolvedPayload);
+      const enslavedPersonId = await getOrCreateEnslavedPerson(client, resolvedPayload);
 
       const entry = await client.query(
         `
@@ -100,14 +191,14 @@ transcriptionRouter.post(
         RETURNING *
         `,
         [
-          payload.page_id,
-          payload.county_id,
-          payload.district_id || null,
+          resolvedPayload.page_id,
+          resolvedPayload.county_id,
+          resolvedPayload.district_id || null,
           taxpayerId,
           enslavedPersonId,
-          payload.line_number || null,
-          payload.sequence_on_page || null,
-          payload.year || 1863
+          resolvedPayload.line_number || null,
+          resolvedPayload.sequence_on_page || null,
+          resolvedPayload.year || 1863
         ]
       );
 
@@ -130,21 +221,25 @@ transcriptionRouter.post(
         `,
         [
           entry.rows[0].id,
-          payload.category_original || null,
-          payload.age_original || null,
-          payload.age_years || null,
-          payload.value_original || null,
-          payload.value_cents || null,
-          payload.quantity_original || null,
-          payload.remarks_original || null,
-          payload.transcription_confidence || null,
+          resolvedPayload.category_original || null,
+          resolvedPayload.age_original || null,
+          resolvedPayload.age_years || null,
+          resolvedPayload.value_original || null,
+          resolvedPayload.value_cents || null,
+          resolvedPayload.quantity_original || null,
+          resolvedPayload.remarks_original || null,
+          resolvedPayload.transcription_confidence || null,
           req.user?.id || null,
-          payload.status || "draft"
+          resolvedPayload.status || "draft"
         ]
       );
 
       return entry.rows[0];
     });
+
+    if (created?.error) {
+      return res.status(400).json(created.error);
+    }
 
     await writeAuditLog({
       actorUserId: req.user?.id,
@@ -308,12 +403,22 @@ transcriptionRouter.get(
           tae.sequence_on_page,
           tae.line_number,
           tae.year,
+          p.page_number_label,
+          p.image_url,
+          si.label AS source_item_label,
+          s.title AS source_title,
+          r.name AS repository_name,
+          r.location AS repository_location,
           t.name_original AS taxpayer_name_original,
           ep.name_original AS enslaved_name_original,
           ed.status,
           ed.transcription_confidence
         FROM tax_assessment_entries tae
         JOIN enslavement_details ed ON ed.entry_id = tae.id
+        JOIN pages p ON p.id = tae.page_id
+        JOIN source_items si ON si.id = p.source_item_id
+        JOIN sources s ON s.id = si.source_id
+        JOIN repositories r ON r.id = s.repository_id
         JOIN taxpayers t ON t.id = tae.taxpayer_id
         JOIN enslaved_people ep ON ep.id = tae.enslaved_person_id
         WHERE tae.page_id = $1
@@ -351,6 +456,18 @@ transcriptionRouter.post(
 
     await withTransaction(async (client) => {
       for (const row of rows) {
+        const validated = await validateAndResolveEntryPayload(client, row);
+        if (validated.error) {
+          dedupeWarnings.push({
+            row,
+            warning: "invalid_row",
+            details: validated.error
+          });
+          continue;
+        }
+
+        const resolvedRow = validated.resolved;
+
         const duplicate = await client.query(
           `
           SELECT tae.id
@@ -361,7 +478,11 @@ transcriptionRouter.post(
             AND ep.name_normalized = $3
           LIMIT 1
           `,
-          [row.page_id, row.sequence_on_page || null, normalizeText(row.enslaved_name_original)]
+          [
+            resolvedRow.page_id,
+            resolvedRow.sequence_on_page || null,
+            normalizeText(resolvedRow.enslaved_name_original)
+          ]
         );
 
         if (duplicate.rows[0]) {
@@ -374,16 +495,16 @@ transcriptionRouter.post(
         }
 
         const taxpayerId = await getOrCreateTaxpayer(client, {
-          county_id: row.county_id,
-          district_id: row.district_id,
-          taxpayer_name_original: row.taxpayer_name_original,
-          taxpayer_name_normalized: row.taxpayer_name_normalized
+          county_id: resolvedRow.county_id,
+          district_id: resolvedRow.district_id,
+          taxpayer_name_original: resolvedRow.taxpayer_name_original,
+          taxpayer_name_normalized: resolvedRow.taxpayer_name_normalized
         });
         const enslavedPersonId = await getOrCreateEnslavedPerson(client, {
-          enslaved_name_original: row.enslaved_name_original,
-          enslaved_name_normalized: row.enslaved_name_normalized,
-          gender: row.gender,
-          approx_birth_year: row.approx_birth_year
+          enslaved_name_original: resolvedRow.enslaved_name_original,
+          enslaved_name_normalized: resolvedRow.enslaved_name_normalized,
+          gender: resolvedRow.gender,
+          approx_birth_year: resolvedRow.approx_birth_year
         });
 
         const entry = await client.query(
@@ -395,14 +516,14 @@ transcriptionRouter.post(
           RETURNING id
           `,
           [
-            row.page_id,
-            row.county_id,
-            row.district_id || null,
+            resolvedRow.page_id,
+            resolvedRow.county_id,
+            resolvedRow.district_id || null,
             taxpayerId,
             enslavedPersonId,
-            row.line_number || null,
-            row.sequence_on_page || null,
-            row.year || 1863
+            resolvedRow.line_number || null,
+            resolvedRow.sequence_on_page || null,
+            resolvedRow.year || 1863
           ]
         );
 
@@ -416,16 +537,16 @@ transcriptionRouter.post(
           `,
           [
             entry.rows[0].id,
-            row.category_original || null,
-            row.age_original || null,
-            row.age_years || null,
-            row.value_original || null,
-            row.value_cents || null,
-            row.quantity_original || null,
-            row.remarks_original || null,
-            row.transcription_confidence || null,
+            resolvedRow.category_original || null,
+            resolvedRow.age_original || null,
+            resolvedRow.age_years || null,
+            resolvedRow.value_original || null,
+            resolvedRow.value_cents || null,
+            resolvedRow.quantity_original || null,
+            resolvedRow.remarks_original || null,
+            resolvedRow.transcription_confidence || null,
             req.user?.id || null,
-            row.status || "draft"
+            resolvedRow.status || "draft"
           ]
         );
 

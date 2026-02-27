@@ -741,15 +741,23 @@ async function renderTranscriptionQueue() {
 
 async function renderTranscriptionWorkspace() {
   const page = state.cache.get("workspace.page") || null;
-  const pageInfo = page
-    ? `<p><strong>Page:</strong> ${escapeHtml(page.page_number_label || page.page_id || "")}</p>`
-    : "<p>Select a page from Queue or Pages to begin.</p>";
 
   let pageEntries = [];
   if (page?.page_id || page?.id) {
     const pageId = page.page_id || page.id;
     pageEntries = await apiJson(`/api/transcriptions/entries/by-page/${pageId}`);
   }
+
+  const pageContext = pageEntries[0] || null;
+  const pageInfo = page
+    ? `
+      <p><strong>Page:</strong> ${escapeHtml(page.page_number_label || page.page_id || "")}</p>
+      <p><strong>County / District:</strong> ${escapeHtml(pageContext?.county_name || page.county_name || page.county_id || "")}${pageContext?.district_name || page.district_name || page.district_id ? ` / ${escapeHtml(pageContext?.district_name || page.district_name || page.district_id || "")}` : ""}</p>
+      <p><strong>Source Item:</strong> ${escapeHtml(pageContext?.source_item_label || "N/A")}</p>
+      <p><strong>Source Title:</strong> ${escapeHtml(pageContext?.source_title || "N/A")}</p>
+      <p><strong>Repository:</strong> ${escapeHtml(pageContext?.repository_name || "N/A")}${pageContext?.repository_location ? ` (${escapeHtml(pageContext.repository_location)})` : ""}</p>
+    `
+    : "<p>Select a page from Queue or Pages to begin.</p>";
 
   pageContent.innerHTML = `
     <div class="workspace">
@@ -770,14 +778,15 @@ async function renderTranscriptionWorkspace() {
 
       <section class="card">
         <h3>Entry Builder</h3>
+        <p style="margin-top:0;">Each row is anchored to this page and inherits county/district from page metadata.</p>
         <div class="entry-list">
           ${renderMiniTable(["sequence_on_page", "taxpayer_name_original", "enslaved_name_original", "status", "transcription_confidence"], pageEntries)}
         </div>
 
         <form id="entry-form" class="form-grid two">
-          <label>Page ID <input name="page_id" type="number" value="${escapeHtml(String(page?.page_id || page?.id || ""))}" required /></label>
-          <label>County ID <input name="county_id" type="number" value="${escapeHtml(String(page?.county_id || ""))}" required /></label>
-          <label>District ID <input name="district_id" type="number" value="${escapeHtml(String(page?.district_id || ""))}" /></label>
+          <label>Page ID <input name="page_id" type="number" value="${escapeHtml(String(page?.page_id || page?.id || ""))}" required readonly /></label>
+          <label>County ID <input name="county_id" type="number" value="${escapeHtml(String(page?.county_id || ""))}" required readonly /></label>
+          <label>District ID <input name="district_id" type="number" value="${escapeHtml(String(page?.district_id || ""))}" readonly /></label>
           <label>Sequence on page <input name="sequence_on_page" type="number" required /></label>
           <label>Line number <input name="line_number" /></label>
           <label>Year <input name="year" type="number" value="1863" /></label>
@@ -891,6 +900,10 @@ async function renderTranscriptionWorkspace() {
     event.preventDefault();
     const formData = new FormData(entryForm);
     const payload = Object.fromEntries(formData.entries());
+    if (!payload.page_id) {
+      alert("Select a page from Queue or Pages before saving an entry.");
+      return;
+    }
     payload.transcription_confidence = Number(payload.transcription_confidence || 0) / 100;
 
     const created = await apiJson("/api/transcriptions/entries", {
@@ -1031,6 +1044,10 @@ async function renderImports() {
       <label><input type="checkbox" name="parse_values" checked /> Attempt parse age/value</label>
       <label><input type="checkbox" name="set_needs_review" /> Set all to needs_review</label>
       <button type="submit">Commit import</button>
+      <div style="grid-column:1/-1;font-size:0.92rem;">
+        Required columns for entry import: <code>page_id</code>, <code>taxpayer_name_original</code>, <code>enslaved_name_original</code>.
+        Optional: <code>sequence_on_page</code>, <code>line_number</code>, <code>year</code>, age/value/category/remarks fields.
+      </div>
       <pre id="import-output" style="grid-column:1/-1;"></pre>
     </form>
   `;
@@ -1041,12 +1058,16 @@ async function renderImports() {
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const data = new FormData(form);
-    const response = await apiFetch("/api/transcriptions/bulk-import", {
-      method: "POST",
-      body: data
-    });
-    const body = await response.json();
-    output.textContent = JSON.stringify(body, null, 2);
+    output.textContent = "Running import...";
+    try {
+      const body = await apiFetch("/api/transcriptions/bulk-import", {
+        method: "POST",
+        body: data
+      });
+      output.textContent = JSON.stringify(body, null, 2);
+    } catch (error) {
+      output.textContent = `Import failed: ${error.message || "Unknown error"}\nIf this runtime does not support bulk import, use Transcription Workspace page-by-page entry.`;
+    }
   });
 }
 
