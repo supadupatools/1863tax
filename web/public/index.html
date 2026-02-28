@@ -13,45 +13,47 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <div class="frame">
-      <header class="top-strip" aria-label="Search page header">
-        <span class="strip-icon" aria-hidden="true"></span>
-        <h1>1863 ARCHIVE SEARCH</h1>
-        <div class="menuWrap">
-          <button
-            id="menu-toggle"
-            class="menuToggle"
-            type="button"
-            aria-label="Open site menu"
-            aria-expanded="false"
-            aria-controls="site-menu"
-          >
-            <span></span>
-            <span></span>
-            <span></span>
-          </button>
-          <nav id="site-menu" class="siteMenu hidden" aria-label="Site menu">
-            <a href="/">Home</a>
-            <a href="/login">Admin Login</a>
-          </nav>
+    <header class="masthead" aria-label="Search header">
+      <div class="masthead-overlay"></div>
+      <div class="frame masthead-inner">
+        <div class="masthead-top">
+          <div>
+            <p class="kicker">Raeford Research Archive</p>
+            <h1>1863 Tax Assessment Search</h1>
+          </div>
+          <div class="menuWrap">
+            <button
+              id="menu-toggle"
+              class="menuToggle"
+              type="button"
+              aria-label="Open site menu"
+              aria-expanded="false"
+              aria-controls="site-menu"
+            >
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
+            <nav id="site-menu" class="siteMenu hidden" aria-label="Site menu">
+              <a href="/">Home</a>
+              <a href="/search/">Search</a>
+              <a href="/login">Admin Login</a>
+            </nav>
+          </div>
         </div>
-      </header>
-      <div class="rule"></div>
-      <p class="lede">
-        Search enslaved person names from surviving county tax assessment records.
-      </p>
 
-      <main class="layout">
-        <section class="search-card">
-          <h2>Search Enslaved Name Entries</h2>
-          <form id="search-form" class="search-grid">
-            <label>
-              Name
-              <input id="name" name="name" required placeholder="e.g., Julia" />
+        <form id="search-form" class="searchHeroForm">
+          <div class="heroSearchRow">
+            <label class="heroKeyword">
+              <span class="srOnly">Name</span>
+              <input id="name" name="name" required placeholder="Search enslaved names, taxpayers, or variants" />
             </label>
+            <button type="submit">Search Archive</button>
+          </div>
 
+          <div class="heroFilters">
             <label>
-              Match Mode
+              <span>Match Mode</span>
               <select id="match_mode" name="match_mode">
                 <option value="fuzzy" selected>Fuzzy</option>
                 <option value="exact">Exact</option>
@@ -60,64 +62,81 @@
             </label>
 
             <label>
-              County
+              <span>County</span>
               <select id="county_id" name="county_id">
                 <option value="">All Counties</option>
               </select>
             </label>
 
             <label>
-              District
+              <span>District</span>
               <select id="district_id" name="district_id" disabled>
                 <option value="">All Districts</option>
               </select>
             </label>
 
             <label>
-              Year
+              <span>Year</span>
               <input id="year" name="year" type="number" value="1863" />
             </label>
 
             <label>
-              Taxpayer Name (optional)
-              <input id="taxpayer_name" name="taxpayer_name" />
+              <span>Taxpayer</span>
+              <input id="taxpayer_name" name="taxpayer_name" placeholder="Optional" />
             </label>
-
-            <button type="submit">Search Archive</button>
-          </form>
-          <p id="filters-note" class="filters-note" aria-live="polite"></p>
-        </section>
-
-        <section class="results-card">
-          <div class="results-header">
-            <h2>Results</h2>
-            <p id="summary">No search yet.</p>
           </div>
+        </form>
+      </div>
 
-          <div class="split">
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Enslaved Name (As-Written)</th>
-                    <th>Normalized</th>
-                    <th>County / District</th>
-                    <th>Taxpayer</th>
-                    <th>Attributes</th>
-                  </tr>
-                </thead>
-                <tbody id="results-body"></tbody>
-              </table>
+      <div class="masthead-nav">
+        <div class="frame masthead-nav-inner">
+          <a href="/">Home</a>
+          <a href="/search/" aria-current="page">Search</a>
+          <a href="#results-shell">Results</a>
+          <a href="/login">Admin Login</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="frame page-layout">
+      <section id="results-shell" class="resultsShell">
+        <div class="resultsBar">
+          <p id="summary">No search yet.</p>
+          <button id="export-results" type="button" class="exportBtn">Export list (csv)</button>
+        </div>
+        <div id="filters-note" class="filters-note" aria-live="polite"></div>
+        <div id="results-body" class="resultsList"></div>
+      </section>
+
+      <section id="detail-view" class="detailView hidden" aria-live="polite">
+        <div class="detailMain">
+          <button id="detail-back" type="button" class="backBtn">Back to results</button>
+          <div id="detail-content">
+            <h2>Record Detail</h2>
+            <p>Select a result to view the source record and scan.</p>
+          </div>
+        </div>
+
+        <aside class="detailAside">
+          <div class="scanPanel">
+            <div class="scanToolbar">
+              <button id="zoom-in" type="button">Zoom +</button>
+              <button id="zoom-out" type="button">Zoom -</button>
+              <button id="zoom-reset" type="button">Reset</button>
             </div>
-
-            <article id="detail" class="detail">
-              <h3>Record Detail</h3>
-              <p>Select a result row to view scan, citation chain, and line context.</p>
-            </article>
+            <div class="scanViewport">
+              <img id="detail-scan-image" alt="Selected source scan" class="hidden" />
+              <p id="detail-scan-empty">Scan not loaded yet.</p>
+            </div>
+            <a id="open-scan-link" class="scanLink hidden" target="_blank" rel="noopener">Open full scan</a>
           </div>
-        </section>
-      </main>
-    </div>
+
+          <div id="detail-side-meta" class="sideMeta">
+            <p>Select a record to inspect scan metadata and citation details.</p>
+          </div>
+        </aside>
+      </section>
+    </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./config.js"></script>
