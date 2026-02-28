@@ -5,11 +5,27 @@ const filtersNote = document.getElementById("filters-note");
 const resultsBody = document.getElementById("results-body");
 const summary = document.getElementById("summary");
 const detail = document.getElementById("detail");
+const menuToggle = document.getElementById("menu-toggle");
+const siteMenu = document.getElementById("site-menu");
 const supabaseClient = createSupabaseClient();
 
 let currentRows = [];
 
 init();
+
+menuToggle?.addEventListener("click", () => {
+  const expanded = menuToggle.getAttribute("aria-expanded") === "true";
+  menuToggle.setAttribute("aria-expanded", String(!expanded));
+  siteMenu?.classList.toggle("hidden", expanded);
+});
+
+document.addEventListener("click", (event) => {
+  const target = event.target;
+  if (!target || !(target instanceof Element)) return;
+  if (target.closest(".menuWrap")) return;
+  menuToggle?.setAttribute("aria-expanded", "false");
+  siteMenu?.classList.add("hidden");
+});
 
 countySelect.addEventListener("change", async () => {
   const countyId = countySelect.value || null;

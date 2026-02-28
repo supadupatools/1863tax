@@ -45,7 +45,7 @@ body {
 }
 
 .top-strip {
-  height: 62px;
+  height: 44px;
   display: grid;
   grid-template-columns: 64px 1fr 64px;
   align-items: center;
@@ -57,17 +57,28 @@ body {
 }
 
 .menuToggle {
-  border: 0;
-  background: transparent;
-  font-size: 16px;
-  color: #66615d;
+  width: 34px;
+  height: 28px;
+  border: 1px solid #9d9791;
+  background: #f4f2ee;
+  display: grid;
+  align-content: center;
+  gap: 4px;
   cursor: pointer;
-  padding: 0;
+  padding: 5px 6px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.menuToggle span {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: #433d39;
 }
 
 .siteMenu {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 6px);
   right: 0;
   min-width: 170px;
   border: 1px solid var(--line);
@@ -193,7 +204,7 @@ body {
   top: 148px;
   transform: rotate(90deg);
   transform-origin: right top;
-  font-size: 12px;
+  font-size: 16px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #57514d;
@@ -237,9 +248,20 @@ body {
 .infoCard p {
   margin: 0;
   max-width: 290px;
-  font-size: 30px;
+  font-size: 16px;
   line-height: 1.18;
   color: #4b4542;
+}
+
+.infoCardBody {
+  margin-top: 16px;
+  max-width: 380px;
+}
+
+.infoCardBody p {
+  font-size: 16px;
+  line-height: 1.25;
+  color: #5a5450;
 }
 
 .quietBtn {
@@ -250,7 +272,7 @@ body {
   background: transparent;
   padding: 8px 18px;
   font-family: var(--font-serif);
-  font-size: 17px;
+  font-size: 16px;
   color: #4a4542;
   text-decoration: none;
 }
@@ -464,7 +486,7 @@ tbody tr:hover {
   justify-content: space-between;
   align-items: center;
   padding: 14px 0;
-  font-size: 12px;
+  font-size: 16px;
   letter-spacing: 0.04em;
   color: #3a3431;
 }
@@ -503,7 +525,7 @@ tbody tr:hover {
   }
 
   .infoCard p {
-    font-size: 25px;
+    font-size: 16px;
   }
 }
 

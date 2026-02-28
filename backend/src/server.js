@@ -60,8 +60,8 @@ app.get("/admin", (_req, res) => {
   res.sendFile(path.join(adminWebDir, "index.html"));
 });
 
-app.get("/search", (_req, res) => {
-  res.redirect(302, "/search/");
+app.get(/^\/search\/?$/, (_req, res) => {
+  res.sendFile(path.join(publicWebDir, "index.html"));
 });
 
 app.use("/admin", express.static(adminWebDir));

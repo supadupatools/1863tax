@@ -15,9 +15,26 @@
   <body>
     <div class="frame">
       <header class="top-strip" aria-label="Search page header">
-        <span class="strip-icon" aria-hidden="true">⌘</span>
+        <span class="strip-icon" aria-hidden="true"></span>
         <h1>1863 ARCHIVE SEARCH</h1>
-        <span class="strip-icon" aria-hidden="true">☷</span>
+        <div class="menuWrap">
+          <button
+            id="menu-toggle"
+            class="menuToggle"
+            type="button"
+            aria-label="Open site menu"
+            aria-expanded="false"
+            aria-controls="site-menu"
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+          <nav id="site-menu" class="siteMenu hidden" aria-label="Site menu">
+            <a href="/">Home</a>
+            <a href="/login">Admin Login</a>
+          </nav>
+        </div>
       </header>
       <div class="rule"></div>
       <p class="lede">
