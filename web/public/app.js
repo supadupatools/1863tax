@@ -42,11 +42,22 @@ document.addEventListener("click", (event) => {
 countySelect.addEventListener("change", async () => {
   const countyId = countySelect.value || null;
   await loadDistricts(countyId);
+  clearActiveDetailState();
   updateUrlFromForm();
 });
 
-districtSelect.addEventListener("change", updateUrlFromForm);
-searchForm.addEventListener("change", updateUrlFromForm);
+districtSelect.addEventListener("change", () => {
+  clearActiveDetailState();
+  updateUrlFromForm();
+});
+
+searchForm.addEventListener("change", (event) => {
+  const target = event.target;
+  if (target instanceof Element && target.closest("#search-form")) {
+    clearActiveDetailState();
+  }
+  updateUrlFromForm();
+});
 
 searchForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -86,6 +97,8 @@ async function hydrateFromUrl() {
   setFormValue("match_mode", params.get("match_mode") || "fuzzy");
   setFormValue("year", params.get("year") || "1863");
   setFormValue("taxpayer_name", params.get("taxpayer_name") || "");
+  setFormValue("age_min", params.get("age_min") || "");
+  setFormValue("age_max", params.get("age_max") || "");
 
   const countyId = params.get("county_id") || "";
   countySelect.value = countyId;
@@ -126,6 +139,17 @@ async function runSearch({ pushHistory = false, clearEntry = true } = {}) {
   if (!params.get("name")) {
     summary.textContent = "Enter a name to search.";
     return;
+  }
+
+  const ageMin = params.get("age_min") ? Number(params.get("age_min")) : null;
+  const ageMax = params.get("age_max") ? Number(params.get("age_max")) : null;
+  if (ageMin !== null && ageMax !== null && ageMin > ageMax) {
+    summary.textContent = "Age From cannot be greater than Age To.";
+    return;
+  }
+
+  if (clearEntry) {
+    hideDetail();
   }
 
   if (pushHistory) {
@@ -238,18 +262,64 @@ function renderRows() {
   currentRows.forEach((row, index) => {
     const card = document.createElement("article");
     card.className = "resultCard";
+    const ageValue = row.age_original || (row.age_years != null ? String(row.age_years) : "Not recorded");
+    const valueText = row.value_original || "Not recorded";
+    const pageLine = [
+      row.page_number_label || "Unknown page",
+      row.line_number ? `line ${row.line_number}` : null,
+      row.sequence_on_page ? `seq. ${row.sequence_on_page}` : null
+    ]
+      .filter(Boolean)
+      .join(" . ");
+
     card.innerHTML = `
-      <p class="resultNumber">Record #${escapeHtml(String(row.id || index + 1))}</p>
-      <h3><button type="button" class="recordLink">${escapeHtml(row.enslaved_name_original || "Unnamed entry")}</button></h3>
-      <p class="resultMeta">${escapeHtml(row.repository_name || "Unknown repository")}${row.repository_location ? `, ${escapeHtml(row.repository_location)}` : ""}</p>
-      <p class="resultMeta">${escapeHtml(formatDateLine(row))}</p>
-      <div class="peopleBlock">
-        <h4>Individuals named in record context</h4>
-        <p>Enslaved (1), Taxpayer (1)</p>
+      <div class="resultTopline">
+        <p class="resultNumber">Record #${escapeHtml(String(row.id || index + 1))}</p>
+        <p class="resultCounty">${escapeHtml(row.county_name || "Unknown County")}${row.district_name ? ` / ${escapeHtml(row.district_name)}` : ""}</p>
       </div>
+
+      <div class="resultHeader">
+        <div>
+          <h3><button type="button" class="recordLink">${escapeHtml(row.enslaved_name_original || "Unnamed entry")}</button></h3>
+          <p class="resultTaxpayer">Listed under <strong>${escapeHtml(row.taxpayer_name_original || "Unknown taxpayer")}</strong></p>
+        </div>
+        <div class="resultBadges">
+          <span class="resultBadge">${escapeHtml(row.category_original || "Category not recorded")}</span>
+          <span class="resultBadge">1863</span>
+        </div>
+      </div>
+
+      <div class="resultFacts">
+        <div class="factBlock">
+          <p class="factLabel">Age</p>
+          <p class="factValue">${escapeHtml(ageValue)}</p>
+        </div>
+        <div class="factBlock">
+          <p class="factLabel">Value</p>
+          <p class="factValue">${escapeHtml(valueText)}</p>
+        </div>
+        <div class="factBlock">
+          <p class="factLabel">Page</p>
+          <p class="factValue">${escapeHtml(pageLine)}</p>
+        </div>
+        <div class="factBlock">
+          <p class="factLabel">Source</p>
+          <p class="factValue">${escapeHtml(row.source_item_label || "Unknown item")}</p>
+        </div>
+      </div>
+
+      <div class="sourceStrip">
+        <p class="sourceTitle">${escapeHtml(row.source_title || "Unknown source")}</p>
+        <p class="sourceRepo">${escapeHtml(row.repository_name || "Unknown repository")}${row.repository_location ? `, ${escapeHtml(row.repository_location)}` : ""}</p>
+      </div>
+
       <div class="matchNote">
-        "${escapeHtml(row.enslaved_name_original || "Entry")}" appears in this record under taxpayer
-        <em>${escapeHtml(row.taxpayer_name_original || "Unknown")}</em>.
+        <span class="matchLead">Research note</span>
+        <span>
+          ${escapeHtml(row.enslaved_name_original || "Entry")} appears under
+          <em>${escapeHtml(row.taxpayer_name_original || "Unknown")}</em>
+          ${row.remarks_original ? `with clerk notes: ${escapeHtml(row.remarks_original)}` : "with no surviving remark copied for this line."}
+        </span>
       </div>
     `;
 
@@ -279,6 +349,73 @@ async function loadDetail(entryId, { pushHistory = false } = {}) {
 
 function renderDetail(entry) {
   const title = entry.enslaved_name_original || "Unnamed record";
+  const relatedPeople = Array.isArray(entry.related_people) ? entry.related_people : [];
+  const overviewRows = [
+    ["Taxpayer", entry.taxpayer_name_original || "Unknown"],
+    ["County", entry.county_name || "Unknown"],
+    ["District", entry.district_name || "Not recorded"],
+    ["Age", entry.age_original || (entry.age_years != null ? String(entry.age_years) : "Not recorded")],
+    ["Category", entry.category_original || "Not recorded"],
+    ["Value", entry.value_original || "Not recorded"],
+    ["Quantity", entry.quantity_original || "Not recorded"],
+    [
+      "Page reference",
+      [entry.page_number_label || "Unknown page", entry.line_number ? `line ${entry.line_number}` : null, entry.sequence_on_page ? `seq. ${entry.sequence_on_page}` : null]
+        .filter(Boolean)
+        .join(" . ")
+    ]
+  ];
+  const citationRows = [
+    ["Repository", `${entry.repository_name || "Unknown"}${entry.repository_location ? `, ${entry.repository_location}` : ""}`],
+    ["Source", entry.source_title || "Unknown source"],
+    ["Volume / item", entry.source_item_label || "Unknown item"],
+    ["Call number", entry.call_number || "Not recorded"],
+    ["Microfilm", entry.microfilm_roll || "Not recorded"],
+    ["Format", entry.format || "Not recorded"],
+    ["Preferred citation", entry.citation_preferred || "Not recorded"]
+  ];
+  const relatedMarkup = relatedPeople.length
+    ? `
+      <section class="detailSection">
+        <h3>Others Listed Under This Taxpayer</h3>
+        <p class="detailContext">
+          These individuals were also recorded under <strong>${escapeHtml(entry.taxpayer_name_original || "this taxpayer")}</strong>
+          in the same 1863 county/district context and may reflect a household or family grouping.
+        </p>
+        <div class="relatedPeopleList">
+          ${relatedPeople
+            .map(
+              (person) => `
+                <article class="relatedPersonCard">
+                  <p class="relatedPersonName">${escapeHtml(person.enslaved_name_original || "Unnamed entry")}</p>
+                  <p class="relatedPersonMeta">
+                    ${escapeHtml(person.page_number_label || "Unknown page")}
+                    ${person.line_number ? `, line ${escapeHtml(person.line_number)}` : ""}
+                    ${person.age_original ? `, age ${escapeHtml(person.age_original)}` : ""}
+                  </p>
+                  <p class="relatedPersonMeta">
+                    ${escapeHtml(person.category_original || "Category not recorded")}
+                    ${person.value_original ? `, value ${escapeHtml(person.value_original)}` : ""}
+                  </p>
+                  ${
+                    person.remarks_original
+                      ? `<p class="relatedPersonRemark">${escapeHtml(person.remarks_original)}</p>`
+                      : ""
+                  }
+                </article>
+              `
+            )
+            .join("")}
+        </div>
+      </section>
+    `
+    : `
+      <section class="detailSection">
+        <h3>Others Listed Under This Taxpayer</h3>
+        <p class="detailContext">No additional approved entries were found under this taxpayer in the same county/district context.</p>
+      </section>
+    `;
+
   detailContent.innerHTML = `
     <h2>${escapeHtml(title)}</h2>
     <p class="detailIntro">
@@ -286,42 +423,61 @@ function renderDetail(entry) {
       Entry recorded in ${escapeHtml(String(entry.year || "1863"))}.
     </p>
 
+    <div class="detailHeadlineRow">
+      <p class="detailTaxpayerLead">Taxpayer account: <strong>${escapeHtml(entry.taxpayer_name_original || "Unknown taxpayer")}</strong></p>
+      <p class="detailSourceLead">${escapeHtml(entry.source_item_label || "Unknown item")} . ${escapeHtml(entry.source_title || "Unknown source")}</p>
+    </div>
+
     <section class="detailSection">
       <h3>Record Overview</h3>
-      <p>
-        Taxpayer: <strong>${escapeHtml(entry.taxpayer_name_original || "Unknown")}</strong>
-        ${entry.taxpayer_name_normalized ? `(${escapeHtml(entry.taxpayer_name_normalized)})` : ""}
-      </p>
-      <p>
-        Line / Sequence: ${escapeHtml(entry.line_number || "Unknown")}
-        ${entry.sequence_on_page ? ` / ${escapeHtml(String(entry.sequence_on_page))}` : ""}
-      </p>
-      <p>
-        Attributes:
-        Age ${escapeHtml(entry.age_original || "n/a")},
-        Category ${escapeHtml(entry.category_original || "n/a")},
-        Value ${escapeHtml(entry.value_original || "n/a")}
-      </p>
-      <p>
-        Remarks: ${escapeHtml(entry.remarks_original || "No remarks recorded.")}
-      </p>
+      <div class="detailFactsGrid">
+        ${overviewRows
+          .map(
+            ([label, value]) => `
+              <article class="detailFactCard">
+                <p class="detailFactLabel">${escapeHtml(label)}</p>
+                <p class="detailFactValue">${escapeHtml(value)}</p>
+              </article>
+            `
+          )
+          .join("")}
+      </div>
+      <div class="detailNarrative">
+        <p class="detailNarrativeLabel">Remarks</p>
+        <p>${escapeHtml(entry.remarks_original || "No remarks recorded.")}</p>
+      </div>
     </section>
+
+    ${relatedMarkup}
 
     <section class="detailSection">
       <h3>Citation Information</h3>
-      <p><strong>Repository:</strong> ${escapeHtml(entry.repository_name || "Unknown")}${entry.repository_location ? `, ${escapeHtml(entry.repository_location)}` : ""}</p>
-      <p><strong>Source:</strong> ${escapeHtml(entry.source_title || "Unknown source")}</p>
-      <p><strong>Source Item:</strong> ${escapeHtml(entry.source_item_label || "Unknown item")}</p>
-      <p><strong>Page:</strong> ${escapeHtml(entry.page_number_label || "Unknown page")}</p>
-      ${entry.citation_preferred ? `<p><strong>Preferred citation:</strong> ${escapeHtml(entry.citation_preferred)}</p>` : ""}
+      <div class="detailFactsGrid citationGrid">
+        ${citationRows
+          .map(
+            ([label, value]) => `
+              <article class="detailFactCard">
+                <p class="detailFactLabel">${escapeHtml(label)}</p>
+                <p class="detailFactValue">${escapeHtml(value)}</p>
+              </article>
+            `
+          )
+          .join("")}
+      </div>
     </section>
   `;
 
   detailSideMeta.innerHTML = `
-    <p><strong>Repository</strong><br>${escapeHtml(entry.repository_name || "Unknown")}</p>
-    <p><strong>Source</strong><br>${escapeHtml(entry.source_title || "Unknown")}</p>
-    <p><strong>Page Label</strong><br>${escapeHtml(entry.page_number_label || "Unknown")}</p>
-    <p><strong>County / District</strong><br>${escapeHtml(entry.county_name || "")}${entry.district_name ? ` / ${escapeHtml(entry.district_name)}` : ""}</p>
+    <p class="sideMetaLabel">Repository</p>
+    <p class="sideMetaValue">${escapeHtml(entry.repository_name || "Unknown")}</p>
+    <p class="sideMetaLabel">Source</p>
+    <p class="sideMetaValue">${escapeHtml(entry.source_title || "Unknown")}</p>
+    <p class="sideMetaLabel">Volume</p>
+    <p class="sideMetaValue">${escapeHtml(entry.source_item_label || "Unknown item")}</p>
+    <p class="sideMetaLabel">Page Label</p>
+    <p class="sideMetaValue">${escapeHtml(entry.page_number_label || "Unknown")}</p>
+    <p class="sideMetaLabel">County / District</p>
+    <p class="sideMetaValue">${escapeHtml(entry.county_name || "")}${entry.district_name ? ` / ${escapeHtml(entry.district_name)}` : ""}</p>
     ${entry.repository_url ? `<p><a href="${escapeHtml(entry.repository_url)}" target="_blank" rel="noopener">Repository website</a></p>` : ""}
   `;
 
@@ -344,6 +500,15 @@ function renderDetail(entry) {
 function hideDetail() {
   currentDetail = null;
   detailView.classList.add("hidden");
+}
+
+function clearActiveDetailState() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.has("entry")) {
+    params.delete("entry");
+    history.replaceState({}, "", `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}`);
+  }
+  hideDetail();
 }
 
 async function searchEntries(params) {
@@ -383,6 +548,8 @@ async function searchEntriesFromSupabase(params) {
     p_year: Number(params.get("year") || 1863),
     p_taxpayer: params.get("taxpayer_name") || null,
     p_mode: params.get("match_mode") || "fuzzy",
+    p_age_min: params.get("age_min") ? Number(params.get("age_min")) : null,
+    p_age_max: params.get("age_max") ? Number(params.get("age_max")) : null,
     p_limit: 100,
     p_offset: 0
   });

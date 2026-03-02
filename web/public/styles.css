@@ -64,9 +64,10 @@ body {
 .masthead h1 {
   margin: 0.45rem 0 1rem;
   font-family: var(--font-condensed);
-  font-size: clamp(70px, 8vw, 130px);
+  font-size: clamp(42px, 5vw, 78px);
   line-height: 0.9;
   letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .menuWrap {
@@ -153,21 +154,35 @@ body {
   padding: 0.8rem 0.9rem;
 }
 
+.heroKeyword input {
+  font-size: 1.3rem;
+  padding: 1rem 1.1rem;
+  border: 2px solid rgba(255, 255, 255, 0.86);
+  background: rgba(255, 255, 255, 0.98);
+}
+
 .heroSearchRow button {
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  background: #efe8df;
-  color: #1c1c1f;
+  border: 2px solid #f5efe6;
+  background: #f5efe6;
+  color: #131417;
   font: inherit;
-  font-size: 1rem;
+  font-size: 1.2rem;
+  font-weight: 700;
   cursor: pointer;
-  padding: 0.8rem 1rem;
+  padding: 0.95rem 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .heroFilters {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.6fr) repeat(2, minmax(0, 0.8fr));
   gap: 1rem;
   margin-top: 0.85rem;
+}
+
+.taxpayerField {
+  grid-column: auto;
 }
 
 .heroFilters label {
@@ -251,22 +266,71 @@ body {
   background: #d7d9de;
 }
 
+.resultTopline {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.resultCounty {
+  margin: 0;
+  font-size: 0.98rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #766d64;
+}
+
+.resultHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: start;
+  margin-top: 0.35rem;
+}
+
 .resultCard h3 {
-  margin: 0 0 0.45rem;
+  margin: 0;
   font-size: 3rem;
   font-weight: 400;
-  color: #7a7269;
+  color: #3b3733;
 }
 
 .recordLink {
   border: 0;
   background: transparent;
-  color: #0c4f7b;
+  color: #17324d;
   font: inherit;
   font-size: inherit;
   cursor: pointer;
   padding: 0;
   text-decoration: underline;
+}
+
+.resultTaxpayer {
+  margin: 0.35rem 0 0;
+  font-size: 1.24rem;
+  color: #5f5750;
+}
+
+.resultBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: flex-end;
+}
+
+.resultBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0.22rem 0.62rem;
+  border: 1px solid #bbb2a8;
+  background: #e8e0d6;
+  color: #4d463e;
+  font-size: 0.92rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .resultNumber {
@@ -283,20 +347,50 @@ body {
   color: #746d65;
 }
 
-.peopleBlock {
-  margin-top: 1.6rem;
+.resultFacts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin-top: 1.1rem;
 }
 
-.peopleBlock h4 {
-  margin: 0 0 0.25rem;
-  font-size: 1.7rem;
-  font-weight: 600;
+.factBlock {
+  border-top: 1px solid #bfb7ad;
+  padding-top: 0.62rem;
 }
 
-.peopleBlock p {
+.factLabel {
   margin: 0;
+  font-size: 0.88rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #857c73;
+}
+
+.factValue {
+  margin: 0.22rem 0 0;
   font-size: 1.15rem;
-  color: #716961;
+  line-height: 1.25;
+  color: #2d2a27;
+}
+
+.sourceStrip {
+  margin-top: 1rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid #cbc3b8;
+}
+
+.sourceTitle {
+  margin: 0;
+  font-size: 1.12rem;
+  font-weight: 600;
+  color: #403a35;
+}
+
+.sourceRepo {
+  margin: 0.18rem 0 0;
+  font-size: 1.05rem;
+  color: #6c645d;
 }
 
 .matchNote {
@@ -304,7 +398,17 @@ body {
   border: 2px solid var(--accent);
   background: #cfd6df;
   padding: 1rem 0.9rem;
-  font-size: 1.15rem;
+  font-size: 1.08rem;
+  display: grid;
+  gap: 0.28rem;
+  color: #34393e;
+}
+
+.matchLead {
+  font-size: 0.84rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: #526166;
 }
 
 .emptyCard {
@@ -350,6 +454,34 @@ body {
   color: #6e665f;
 }
 
+.detailHeadlineRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: baseline;
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid #cfc7bd;
+}
+
+.detailTaxpayerLead,
+.detailSourceLead {
+  margin: 0;
+}
+
+.detailTaxpayerLead {
+  font-size: 1.35rem;
+  color: #3d3732;
+}
+
+.detailSourceLead {
+  font-size: 0.98rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #7c736a;
+}
+
 .detailSection {
   margin-top: 2rem;
 }
@@ -365,6 +497,89 @@ body {
   font-size: 1.25rem;
   line-height: 1.35;
   color: #6e665f;
+}
+
+.detailFactsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.detailFactCard {
+  background: #f4efe8;
+  border: 1px solid #cbc3b8;
+  padding: 0.85rem 0.95rem;
+}
+
+.detailFactLabel {
+  margin: 0;
+  font-size: 0.86rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #877d73;
+}
+
+.detailFactValue {
+  margin: 0.3rem 0 0;
+  font-size: 1.18rem;
+  line-height: 1.28;
+  color: #312d29;
+}
+
+.citationGrid .detailFactCard {
+  background: #eee7df;
+}
+
+.detailNarrative {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #ebe4da;
+  border-left: 3px solid #b7ab9c;
+}
+
+.detailNarrativeLabel {
+  margin: 0 0 0.32rem;
+  font-size: 0.88rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #7d7368;
+}
+
+.detailContext {
+  margin: 0.35rem 0 0;
+  font-size: 1.12rem;
+  color: #6b645c;
+}
+
+.relatedPeopleList {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+
+.relatedPersonCard {
+  border: 1px solid #cac3b9;
+  background: #f4f0ea;
+  padding: 0.95rem 1rem;
+}
+
+.relatedPersonName {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 600;
+  color: #383530;
+}
+
+.relatedPersonMeta {
+  margin: 0.28rem 0 0;
+  font-size: 1.02rem;
+  color: #746d65;
+}
+
+.relatedPersonRemark {
+  margin: 0.55rem 0 0;
+  font-size: 1rem;
+  color: #3d3a37;
 }
 
 .detailAside {
@@ -422,13 +637,28 @@ body {
   color: #6b635b;
 }
 
-.sideMeta p {
-  margin: 0 0 1rem;
+.sideMetaLabel {
+  margin: 0.8rem 0 0.12rem;
+  font-size: 0.84rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #7d7368;
+}
+
+.sideMetaValue {
+  margin: 0;
+  font-size: 1.15rem;
+  color: #302c28;
 }
 
 @media (max-width: 1100px) {
   .heroFilters {
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .resultFacts,
+  .detailFactsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .detailView {
@@ -442,15 +672,23 @@ body {
   }
 
   .masthead h1 {
-    font-size: clamp(52px, 14vw, 84px);
+    font-size: clamp(34px, 8vw, 52px);
   }
 
   .heroSearchRow {
     grid-template-columns: 1fr;
   }
 
+  .heroKeyword input {
+    font-size: 1.15rem;
+  }
+
   .heroFilters {
     grid-template-columns: 1fr;
+  }
+
+  .taxpayerField {
+    grid-column: auto;
   }
 
   .masthead-nav-inner {
@@ -465,6 +703,22 @@ body {
   .resultsBar {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .resultTopline,
+  .resultHeader,
+  .detailHeadlineRow {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .resultBadges {
+    justify-content: flex-start;
+  }
+
+  .resultFacts,
+  .detailFactsGrid {
+    grid-template-columns: 1fr;
   }
 
   .resultCard h3 {

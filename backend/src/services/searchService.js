@@ -28,6 +28,8 @@ export async function searchPublicEntries({
   countyId,
   districtId,
   year = 1863,
+  ageMin,
+  ageMax,
   taxpayer,
   mode = "fuzzy",
   limit = 50,
@@ -96,13 +98,15 @@ export async function searchPublicEntries({
       AND ($3::INT IS NULL OR tae.county_id = $3)
       AND ($4::INT IS NULL OR tae.district_id = $4)
       AND ($5::INT IS NULL OR tae.year = $5)
+      AND ($6::INT IS NULL OR ed.age_years >= $6)
+      AND ($7::INT IS NULL OR ed.age_years <= $7)
       AND (
-        $6::TEXT IS NULL
-        OR t.name_normalized ILIKE '%' || $6 || '%'
-        OR t.name_original ILIKE '%' || $7 || '%'
+        $8::TEXT IS NULL
+        OR t.name_normalized ILIKE '%' || $8 || '%'
+        OR t.name_original ILIKE '%' || $9 || '%'
       )
     ORDER BY rank_score DESC, tae.sequence_on_page NULLS LAST, tae.id DESC
-    LIMIT $8 OFFSET $9
+    LIMIT $10 OFFSET $11
   `;
 
   const values = [
@@ -111,6 +115,8 @@ export async function searchPublicEntries({
     countyId || null,
     districtId || null,
     year || null,
+    ageMin ?? null,
+    ageMax ?? null,
     normalizedTaxpayer || null,
     taxpayer || null,
     limit,
@@ -187,5 +193,47 @@ export async function getPublicEntryDetail(entryId) {
     [entryId]
   );
 
-  return result.rows[0] || null;
+  const detail = result.rows[0] || null;
+  if (!detail) return null;
+
+  const relatedResult = await query(
+    `
+    SELECT
+      tae.id,
+      tae.page_id,
+      tae.line_number,
+      tae.sequence_on_page,
+      tae.year,
+      p.page_number_label,
+      ep.name_original AS enslaved_name_original,
+      ep.name_normalized AS enslaved_name_normalized,
+      ed.age_original,
+      ed.age_years,
+      ed.category_original,
+      ed.value_original,
+      ed.remarks_original
+    FROM tax_assessment_entries tae
+    JOIN enslavement_details ed ON ed.entry_id = tae.id
+    JOIN enslaved_people ep ON ep.id = tae.enslaved_person_id
+    JOIN taxpayers t ON t.id = tae.taxpayer_id
+    JOIN pages p ON p.id = tae.page_id
+    WHERE ed.status = 'approved'
+      AND tae.id <> $1
+      AND tae.year = $2
+      AND tae.county_id = $3
+      AND COALESCE(tae.district_id, -1) = COALESCE($4, -1)
+      AND t.name_normalized = $5
+    ORDER BY tae.sequence_on_page NULLS LAST, tae.id ASC
+    `,
+    [
+      entryId,
+      detail.year,
+      detail.county_id,
+      detail.district_id,
+      detail.taxpayer_name_normalized
+    ]
+  );
+
+  detail.related_people = relatedResult.rows;
+  return detail;
 }

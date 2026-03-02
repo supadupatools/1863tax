@@ -39,11 +39,19 @@ publicRouter.get(
       return res.status(400).json({ error: "name_required" });
     }
 
+    const ageMin = parseIntOrNull(req.query.age_min);
+    const ageMax = parseIntOrNull(req.query.age_max);
+    if (ageMin !== null && ageMax !== null && ageMin > ageMax) {
+      return res.status(400).json({ error: "invalid_age_range" });
+    }
+
     const entries = await searchPublicEntries({
       name,
       countyId: parseIntOrNull(req.query.county_id),
       districtId: parseIntOrNull(req.query.district_id),
       year: parseIntOrNull(req.query.year) || 1863,
+      ageMin,
+      ageMax,
       taxpayer: req.query.taxpayer_name || null,
       mode: req.query.match_mode || "fuzzy",
       limit: Math.min(parseIntOrNull(req.query.limit) || 50, 100),

@@ -18,7 +18,7 @@
       <div class="frame masthead-inner">
         <div class="masthead-top">
           <div>
-            <p class="kicker">Raeford Research Archive</p>
+            <p class="kicker">Raeford Research</p>
             <h1>1863 Tax Assessment Search</h1>
           </div>
           <div class="menuWrap">
@@ -75,14 +75,19 @@
               </select>
             </label>
 
-            <label>
-              <span>Year</span>
-              <input id="year" name="year" type="number" value="1863" />
+            <label class="taxpayerField">
+              <span>Taxpayer</span>
+              <input id="taxpayer_name" name="taxpayer_name" placeholder="Optional" />
             </label>
 
             <label>
-              <span>Taxpayer</span>
-              <input id="taxpayer_name" name="taxpayer_name" placeholder="Optional" />
+              <span>Age From</span>
+              <input id="age_min" name="age_min" type="number" min="0" max="120" placeholder="Optional" />
+            </label>
+
+            <label>
+              <span>Age To</span>
+              <input id="age_max" name="age_max" type="number" min="0" max="120" placeholder="Optional" />
             </label>
           </div>
         </form>
